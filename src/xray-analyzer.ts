@@ -43,7 +43,12 @@ function importedNames(node: ts.ImportDeclaration): string[] {
   if (clause.namedBindings && ts.isNamespaceImport(clause.namedBindings)) names.push(clause.namedBindings.name.text);
   return names;
 }
-function sourceKind(extension: string): ts.ScriptKind { return extension === ".json" ? ts.ScriptKind.JSON : extension === ".tsx" || extension === ".jsx" ? ts.ScriptKind.TSX : ts.ScriptKind.TS; }
+function sourceKind(extension: string): ts.ScriptKind {
+  if (extension === ".json") return ts.ScriptKind.JSON;
+  if (extension === ".tsx" || extension === ".jsx") return ts.ScriptKind.TSX;
+  if ([".js", ".mjs", ".cjs"].includes(extension)) return ts.ScriptKind.JS;
+  return ts.ScriptKind.TS;
+}
 
 export const projectXRayAnalyzer: Analyzer = { name: "project-xray", analyze(scan): Partial<{ projectModel: ProjectModel }> {
   const filePaths = new Set(scan.files.map((file) => file.relativePath));
@@ -80,6 +85,9 @@ export const projectXRayAnalyzer: Analyzer = { name: "project-xray", analyze(sca
   for (const symbol of symbols) symbol.imported = modules.some((module) => module.imports.some((item) => item.kind === "internal" && item.target === symbol.file && item.symbols.includes(symbol.name)));
   const sourceDirectories = [...new Set(files.filter((file) => file.category === "SOURCE").map((file) => file.path.split("/")[0]!).filter(Boolean))].sort(); const testDirectories = [...new Set(files.filter((file) => file.category === "TEST").map((file) => file.path.split("/")[0]!).filter(Boolean))].sort();
   const totalLines = files.reduce((sum, file) => sum + file.lineCount, 0); const sourceFiles = files.filter((file) => file.category === "SOURCE"); const testFiles = files.filter((file) => file.category === "TEST");
-  const model: ProjectModel = { name: packageName, root: { path: scan.root }, files, modules, symbols, packageManagers: packageFile ? ["npm"] : [], dependencies, sourceDirectories, testDirectories, configurationFiles: files.filter((file) => file.category === "CONFIG").map((file) => file.path), environmentFiles: files.filter((file) => /(^|\/)\.env(?:\.|$)/.test(file.path)).map((file) => ({ path: file.path, present: true })), entryPoints: modules.filter((module) => /(^|\/)(main|index|server|app)\.[^.]+$/.test(module.id)).map((module) => module.id), apiEndpoints, databaseTechnologies: technologyFindings(DATABASE), authenticationTechnologies: technologyFindings(AUTH), metrics: { totalFiles: files.length, sourceFiles: sourceFiles.length, testFiles: testFiles.length, totalLines, sourceLines: sourceFiles.reduce((sum, file) => sum + file.lineCount, 0), largestFiles: [...files].sort((a, b) => b.size - a.size).slice(0, 10).map((file) => ({ path: file.path, size: file.size })), largestModules: [...modules].sort((a, b) => b.symbols.length - a.symbols.length).slice(0, 10).map((module) => ({ id: module.id, symbolCount: module.symbols.length })), dependencyCount: dependencies.length, internalModuleCount: modules.reduce((sum, module) => sum + module.imports.filter((item) => item.kind === "internal").length, 0), testSourceRatio: sourceFiles.length ? testFiles.length / sourceFiles.length : undefined } };
+  const paths = new Set(files.map((file) => file.path));
+  const packageManagerLockfiles: ReadonlyArray<readonly [string, string]> = [["pnpm-lock.yaml", "pnpm"], ["yarn.lock", "yarn"], ["package-lock.json", "npm"], ["bun.lockb", "bun"], ["bun.lock", "bun"]];
+  const packageManagers = packageManagerLockfiles.filter(([lockfile]) => paths.has(lockfile)).map(([, manager]) => manager);
+  const model: ProjectModel = { name: packageName, root: { path: scan.root }, files, modules, symbols, packageManagers, dependencies, sourceDirectories, testDirectories, configurationFiles: files.filter((file) => file.category === "CONFIG").map((file) => file.path), environmentFiles: files.filter((file) => /(^|\/)\.env(?:\.|$)/.test(file.path)).map((file) => ({ path: file.path, present: true })), entryPoints: modules.filter((module) => /(^|\/)(main|index|server|app)\.[^.]+$/.test(module.id)).map((module) => module.id), apiEndpoints, databaseTechnologies: technologyFindings(DATABASE), authenticationTechnologies: technologyFindings(AUTH), metrics: { totalFiles: files.length, sourceFiles: sourceFiles.length, testFiles: testFiles.length, totalLines, sourceLines: sourceFiles.reduce((sum, file) => sum + file.lineCount, 0), largestFiles: [...files].sort((a, b) => b.size - a.size).slice(0, 10).map((file) => ({ path: file.path, size: file.size })), largestModules: [...modules].sort((a, b) => b.symbols.length - a.symbols.length).slice(0, 10).map((module) => ({ id: module.id, symbolCount: module.symbols.length })), dependencyCount: dependencies.length, internalModuleCount: modules.reduce((sum, module) => sum + module.imports.filter((item) => item.kind === "internal").length, 0), testSourceRatio: sourceFiles.length ? testFiles.length / sourceFiles.length : undefined } };
   return { projectModel: model };
 }};

@@ -12,6 +12,7 @@ test("builds an evidence-backed Project X-Ray model from TypeScript and JavaScri
     await mkdir(path.join(root, "src", "routes"), { recursive: true });
     await mkdir(path.join(root, "test"), { recursive: true });
     await writeFile(path.join(root, "package.json"), JSON.stringify({ name: "xray-fixture", dependencies: { fastify: "^5", prisma: "^6", jsonwebtoken: "^9", zod: "^3" }, devDependencies: { typescript: "^5" }, peerDependencies: { react: "^19" } }));
+    await writeFile(path.join(root, "pnpm-lock.yaml"), "lockfileVersion: '9.0'");
     await writeFile(path.join(root, ".env.example"), "DATABASE_URL=not-a-secret-value");
     await writeFile(path.join(root, "src", "models", "order.ts"), "export interface Order { id: string }\nexport class OrderRepository {}\n");
     await writeFile(path.join(root, "src", "services.ts"), "import { OrderRepository } from './models/order';\nimport { z } from 'zod';\nexport const orderSchema = z.object({ id: z.string() });\nexport function loadOrder(): OrderRepository { return new OrderRepository(); }\n");
@@ -21,6 +22,7 @@ test("builds an evidence-backed Project X-Ray model from TypeScript and JavaScri
     const report = await new AnalysisEngine().analyze(root, { kind: "local" });
     const model = report.projectModel!;
     assert.equal(model.name, "xray-fixture");
+    assert.deepEqual(model.packageManagers, ["pnpm"]);
     assert.ok(model.files.some((file) => file.path === "src/services.ts" && file.category === "SOURCE" && file.language === "TypeScript"));
     assert.ok(model.files.some((file) => file.path === "test/products.test.ts" && file.category === "TEST"));
     assert.ok(model.files.some((file) => file.path === ".env.example" && file.category === "CONFIG"));

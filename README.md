@@ -1,54 +1,89 @@
-# ReForge AI — Project Analysis Engine foundation
+# ReForge AI
 
-ReForge is an AI-assisted software engineering platform. This repository contains the first, deliberately bounded milestone: a real, local project analysis engine and JSON API.
+ReForge AI is an evidence-first software project analysis platform. It ingests a project, performs bounded static analysis, and returns a machine-readable report. It does not use an LLM to create deterministic findings.
+
+## Current phase
+
+**Phase 2 - Project X-Ray** is complete. ReForge can turn supported project files into a structured `projectModel` that future analysis and planning capabilities can consume.
+
+## Current capabilities
+
+- Ingest a public HTTPS GitHub repository or ZIP archive; a local-path endpoint is available only when explicitly enabled for development.
+- Safely isolate temporary workspaces, reject ZIP traversal and symbolic-link entries, and limit archive size, extraction size, and entry count.
+- Scan relevant project files while ignoring `.git`, `node_modules`, `dist`, `build`, `coverage`, `.next`, `.cache`, `vendor`, binaries, and oversized text.
+- Detect languages, frameworks, manifest dependencies, entry points, licenses, copyright notices, and basic evidence-backed risks.
+- Build a Project X-Ray model for TypeScript, JavaScript, and JSON: classified files, line/file metrics, AST-derived modules and symbols, imports/exports, resolved internal relationships, external imports, and production/development/peer dependencies.
+- Detect common Fastify/Express-style route calls with literal paths, plus supported database and authentication technologies when project evidence exists.
+- Preserve provenance and return evidence for important findings. Environment files are reported only as metadata; their values are never returned.
 
 ## Architecture
 
-`HTTP API → ingestion → safe workspace → file scan → analyzers → versioned report`
+`HTTP API -> ingestion -> isolated workspace -> scanner -> modular analyzers -> versioned report`
 
-The analysis core is independent of Fastify. Each analyzer implements a small interface, so richer parsers, LLM-backed analysis, and security tools can be added without changing ingestion or reporting.
+`AnalysisEngine` orchestrates analyzers over a shared scan result. The Project X-Ray analyzer uses the TypeScript compiler API for TypeScript and JavaScript AST analysis. Static facts remain separate from any future AI inference.
 
-Key decisions:
+See [architecture documentation](docs/architecture.md) and [architectural decisions](docs/decisions.md).
 
-- **Evidence over invention:** detectors only report files, manifest data, and source patterns actually observed.
-- **Provenance first:** source type, URL where supplied, detected license files, and copyright notices are recorded.
-- **Safe archives:** ZIP entries are validated against traversal before extraction; files are size- and count-limited.
-- **Bounded scan:** generated/vendor directories, binaries, and oversized files are excluded from analysis.
-
-## Run
+## Install, run, and test
 
 ```powershell
 pnpm install
-pnpm dev
+pnpm start
 ```
 
-The API listens on `http://127.0.0.1:3000` by default.
+The server listens on `http://127.0.0.1:3000` by default.
 
 ```powershell
-# Analyze a checked-out local project (development-only endpoint)
-Invoke-RestMethod -Method Post http://127.0.0.1:3000/v1/analyze/local -ContentType application/json -Body '{"path":"E:\\some-project"}'
-
-# Analyze a public Git repository
-Invoke-RestMethod -Method Post http://127.0.0.1:3000/v1/analyze/repository -ContentType application/json -Body '{"repositoryUrl":"https://github.com/owner/repository.git"}'
-
-# Upload a ZIP
-curl.exe -F "archive=@C:\path\project.zip" http://127.0.0.1:3000/v1/analyze/archive
+node .\node_modules\typescript\bin\tsc --noEmit
+node .\node_modules\tsx\dist\cli.mjs --test test\*.test.ts
 ```
 
-## Status and limitations
+## API endpoints
 
-Working now: local folder analysis, Git URL ingestion, ZIP upload/extraction, scanning, language/framework/dependency detection, structural summary, provenance and license reporting, basic evidence-backed risks, and the **Project X-Ray** model.
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| GET | `/health` | Service health check |
+| POST | `/v1/analyze/archive` | Analyze a multipart ZIP field named `archive` |
+| POST | `/v1/analyze/repository` | Analyze a public HTTPS GitHub repository URL |
+| POST | `/v1/analyze/local` | Development-only local analysis; requires `REFORGE_ENABLE_LOCAL_INGESTION=true` |
 
-## Project X-Ray (Phase 2)
+Example requests:
 
-Every analysis report now includes `projectModel`, a structured static-fact model. It contains classified files and metrics, TypeScript/JavaScript AST modules and symbols, resolved internal imports, external package imports, manifest dependencies (including peer dependencies), basic Express/Fastify routes, supported database/authentication technologies, configuration and environment-file metadata, and evidence for detected facts.
+```powershell
+curl.exe -F "archive=@C:\path\project.zip" http://127.0.0.1:3000/v1/analyze/archive
 
-TypeScript, JavaScript, and JSON are supported. TypeScript's compiler API performs the TypeScript/JavaScript AST work; this is not regex-based parsing. Environment files are only reported as present—ReForge never includes their values in the project model.
+Invoke-RestMethod -Method Post http://127.0.0.1:3000/v1/analyze/repository -ContentType application/json -Body '{"repositoryUrl":"https://github.com/owner/repository.git"}'
+```
 
-`projectModel` is static analysis output. Future AI-generated conclusions must remain separate from these facts and retain their own evidence/provenance.
+## Project structure
 
-This is not yet a full multi-language parser, authentication system, job queue, persistent storage, UI, private-repository connector, malware scanner, or LLM-powered architectural analyst. AST support currently covers TypeScript/JavaScript and recognizes a deliberately bounded set of route patterns. Repository cloning is intentionally limited to HTTPS Git URLs and should be moved to an isolated worker in production.
+- `src/ingestion.ts` - workspace, Git, upload, and safe ZIP handling
+- `src/scanner.ts` - bounded relevant-file scan
+- `src/analyzers.ts` - Phase 1 evidence-based analyzers
+- `src/xray-analyzer.ts` - Phase 2 Project X-Ray AST and model analysis
+- `src/engine.ts` - report orchestration
+- `src/server.ts` - Fastify transport
+- `test/` - focused unit and fixture tests
+- `docs/` - architecture, decisions, state, and roadmap
 
-## Next milestone
+## Limitations
 
-Add persistent analysis jobs and storage, parser-backed symbol/API extraction, a React report UI, and isolated worker execution before accepting untrusted production workloads.
+- Parser support is currently TypeScript/JavaScript/JSON only.
+- Route detection supports a bounded set of common receiver patterns and literal paths; it does not execute code or infer dynamic routes.
+- Module resolution does not yet implement TypeScript path aliases, package export maps, or monorepo workspaces.
+- No UI, database, job queue, authentication, private-repository connector, security scanner, performance analyzer, LLM/RAG, or code generation exists yet.
+- Git cloning should run in an isolated worker before the service is exposed to untrusted production workloads.
+
+## Roadmap
+
+The next explicit milestone is **Phase 3 - Project Doctor**. See [docs/roadmap.md](docs/roadmap.md) for the complete planned sequence.
+
+## AI AGENT HANDOFF
+
+1. Read this README, then [development state](docs/development-state.md), [architecture](docs/architecture.md), [roadmap](docs/roadmap.md), and [decisions](docs/decisions.md).
+2. Inspect the existing source and tests before modifying anything.
+3. Do not rebuild completed phases; continue from the current Git state.
+4. Preserve the evidence-first architecture and keep static facts separate from future AI inference.
+5. Do not start future phases without explicit instruction.
+
+The next major milestone is **Phase 3 - Project Doctor**.
