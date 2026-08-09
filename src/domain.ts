@@ -47,6 +47,9 @@ export interface ChangeImpactReport { request: ChangeRequest; impactLevel: "LOW"
 export type FileOperation = "CREATE" | "MODIFY" | "DELETE" | "RENAME";
 export interface BuildRequest { goal: string; report: AnalysisReport; impact?: ChangeImpactReport; noveltyCandidate?: NoveltyCandidate; plan?: Plan; constraints?: string[]; }
 export interface BuildPlan { objective: string; provenance: AnalysisReport["provenance"]; fileChanges: { path: string; operation: FileOperation; status: "EXISTING_FILE" | "PROPOSED_NEW_FILE"; reason: string; evidence: Evidence[] }[]; dependencyChanges: { operation: "ADD" | "REMOVE" | "REPLACE"; name: string; reason: string; evidence: Evidence[] }[]; testChanges: string[]; risks: string[]; validation: { valid: boolean; errors: string[] }; assumptions: string[]; }
+export type ExecutionStatus = "PENDING" | "APPROVED" | "RUNNING" | "VERIFYING" | "SUCCEEDED" | "FAILED" | "ROLLED_BACK" | "CANCELLED";
+export interface ExecutionRequest { build: BuildPlan; approved: boolean; allowDelete?: boolean; }
+export interface ExecutionResult { status: ExecutionStatus; changes: { path: string; operation: FileOperation; applied: false; reason: string; evidence: Evidence[] }[]; validation: { valid: boolean; errors: string[] }; provenance: AnalysisReport["provenance"]; rollback: { attempted: false; succeeded: false }; limitations: string[]; }
 
 export interface ScanResult {
   root: string;
