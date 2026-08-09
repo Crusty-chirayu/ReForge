@@ -326,15 +326,32 @@ try {
     /*
      * Validate the client-controlled portion of the request.
      *
-     * Snapshot information is intentionally NOT accepted here.
-     * The server generates the authoritative snapshot below.
+     * Reject any client attempt to supply executable, command, shell, args, cwd, or env overrides.
      */
+    if (
+      typeof executionPayload === "object" &&
+      executionPayload !== null &&
+      ("command" in executionPayload ||
+        "shell" in executionPayload ||
+        "exec" in executionPayload ||
+        "args" in executionPayload ||
+        "cwd" in executionPayload ||
+        "script" in executionPayload ||
+        "env" in executionPayload)
+    ) {
+      return reply.code(400).send({
+        error:
+          "Arbitrary executable, command, shell, args, cwd, or environment overrides are not permitted.",
+      });
+    }
+
     const parsedRequest = z
       .object({
         approved: z.boolean(),
         build: z.any(),
         patches: z.array(z.any()).optional(),
         allowDelete: z.boolean().optional(),
+        verify: z.boolean().optional(),
       })
       .safeParse(executionPayload);
 
@@ -408,6 +425,7 @@ try {
       build: parsedRequest.data.build,
       patches: parsedRequest.data.patches,
       allowDelete: parsedRequest.data.allowDelete,
+      verify: parsedRequest.data.verify,
       snapshotId: snapshot.snapshotId,
       snapshot,
     };

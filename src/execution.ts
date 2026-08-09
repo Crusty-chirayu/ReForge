@@ -9,7 +9,12 @@ import type {
   OperationReceipt,
   PatchOperation,
   PatchValidationError,
+  VerificationResult,
+  VerificationResultItem,
+  VerificationStatus,
 } from "./domain.js";
+import { deriveVerificationPolicy } from "./verification-policy.js";
+import { runVerificationCommand } from "./verification-runner.js";
 
 const unsafe = (value: string) =>
   value.startsWith("/") ||
@@ -438,6 +443,58 @@ export async function executePatchesInWorkspace(
     }
   }
 
+  // 4. CONTROLLED VERIFICATION (if requested and patch application succeeded)
+  let verification: VerificationResult | undefined;
+
+  if (request.verify && !failedOperation) {
+    const policy = await deriveVerificationPolicy(projectRoot, request.snapshot);
+    if (!policy.available) {
+      verification = {
+        attempted: true,
+        overallStatus: "NOT_AVAILABLE",
+        results: [],
+        policy,
+      };
+    } else {
+      const results: VerificationResultItem[] = [];
+      let overallStatus: VerificationStatus = "PASSED";
+
+      for (const cmd of policy.commands) {
+        const resItem = await runVerificationCommand(projectRoot, cmd);
+        results.push(resItem);
+        if (resItem.status !== "PASSED") {
+          overallStatus = resItem.status;
+          break;
+        }
+      }
+
+      verification = {
+        attempted: true,
+        overallStatus,
+        results,
+        policy,
+      };
+
+      if (overallStatus !== "PASSED") {
+        // Verification failed: trigger atomic rollback of patches in workspace
+        rollbackAttempted = true;
+        try {
+          await fs.rm(projectRoot, { recursive: true, force: true });
+          await fs.cp(backupRoot, projectRoot, { recursive: true });
+          rollbackSucceeded = true;
+        } catch {
+          rollbackSucceeded = false;
+        }
+      }
+    }
+  } else if (!request.verify) {
+    verification = {
+      attempted: false,
+      overallStatus: "NOT_AVAILABLE",
+      results: [],
+    };
+  }
+
   // Cleanup backup directory
   try {
     await fs.rm(backupRoot, { recursive: true, force: true });
@@ -460,7 +517,13 @@ export async function executePatchesInWorkspace(
     }
   }
 
-  const finalStatus = failedOperation ? "FAILED" : "SUCCEEDED";
+  const verificationFailed =
+    verification &&
+    verification.attempted &&
+    verification.overallStatus !== "PASSED" &&
+    verification.overallStatus !== "NOT_AVAILABLE";
+
+  const finalStatus = failedOperation || verificationFailed ? "FAILED" : "SUCCEEDED";
 
   return {
     executionId,
@@ -474,6 +537,7 @@ export async function executePatchesInWorkspace(
     provenance: request.build.provenance,
     buildTaskIds,
     diffSummary,
+    verification,
     rollback: { attempted: rollbackAttempted, succeeded: rollbackSucceeded },
     createdAt,
     completedAt: new Date().toISOString(),

@@ -67,8 +67,14 @@ export interface PatchOperation {
 export interface PatchValidationError { code: "APPROVAL_REQUIRED" | "SNAPSHOT_REQUIRED" | "SNAPSHOT_MISMATCH" | "UNSAFE_PATH" | "MISSING_CONTENT" | "MISSING_EXPECTED_HASH" | "STALE_PLAN" | "UNKNOWN_BUILD_TASK" | "INVALID_PROVENANCE" | "INVALID_OPERATION" | "DELETE_APPROVAL_REQUIRED" | "NOT_EXECUTABLE" | "RENAME_COLLISION" | "SOURCE_NOT_FOUND" | "CLEANUP_FAILED"; path?: string; message: string; }
 export interface BuildRequest { goal: string; report: AnalysisReport; snapshot?: ProjectSnapshot; impact?: ChangeImpactReport; noveltyCandidate?: NoveltyCandidate; plan?: Plan; constraints?: string[]; }
 export interface BuildPlan { objective: string; provenance: AnalysisReport["provenance"]; sourceSnapshotId?: string; buildTaskIds?: string[]; fileChanges: { path: string; operation: FileOperation; status: "EXISTING_FILE" | "PROPOSED_NEW_FILE"; expectedHash?: string; reason: string; evidence: Evidence[] }[]; dependencyChanges: { operation: "ADD" | "REMOVE" | "REPLACE"; name: string; reason: string; evidence: Evidence[] }[]; testChanges: string[]; risks: string[]; validation: { valid: boolean; errors: string[] }; assumptions: string[]; }
+export type VerificationStatus = "PASSED" | "FAILED" | "TIMEOUT" | "NOT_AVAILABLE" | "NOT_EXECUTABLE" | "BLOCKED" | "ERROR";
+export interface VerificationCommand { id: string; label: string; executable: string; args: string[]; reason: string; timeoutMs?: number; }
+export interface VerificationPolicy { available: boolean; commands: VerificationCommand[]; reason?: string; }
+export interface VerificationResultItem { id: string; label: string; status: VerificationStatus; exitCode?: number | null; durationMs: number; stdout: string; stderr: string; outputTruncated: boolean; error?: string; }
+export interface VerificationResult { attempted: boolean; overallStatus: VerificationStatus; results: VerificationResultItem[]; policy?: VerificationPolicy; }
+
 export type ExecutionStatus = "PENDING" | "APPROVED" | "RUNNING" | "VERIFYING" | "SUCCEEDED" | "FAILED" | "ROLLED_BACK" | "CANCELLED";
-export interface ExecutionRequest { snapshotId?: string; snapshot?: ProjectSnapshot; build: BuildPlan; patches?: PatchOperation[]; approved: boolean; allowDelete?: boolean; }
+export interface ExecutionRequest { snapshotId?: string; snapshot?: ProjectSnapshot; build: BuildPlan; patches?: PatchOperation[]; approved: boolean; allowDelete?: boolean; verify?: boolean; }
 export interface OperationReceipt {
   path: string;
   operation: FileOperation;
@@ -99,11 +105,13 @@ export interface ExecutionReceipt {
   provenance: AnalysisReport["provenance"];
   buildTaskIds?: string[];
   diffSummary: DiffSummary;
+  verification?: VerificationResult;
   rollback: { attempted: boolean; succeeded: boolean };
   createdAt: string;
   completedAt: string;
 }
 export interface ExecutionResult { status: ExecutionStatus; changes: { path: string; operation: FileOperation; applied: boolean; reason: string; evidence: Evidence[] }[]; validation: { valid: boolean; errors: string[]; details?: PatchValidationError[] }; provenance: AnalysisReport["provenance"]; rollback: { attempted: boolean; succeeded: boolean }; receipt?: ExecutionReceipt; limitations: string[]; }
+
 
 export interface ScanResult {
   root: string;
