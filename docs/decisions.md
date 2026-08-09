@@ -1,5 +1,9 @@
 # Architectural decisions
 
+## Snapshot-bound execution contracts
+
+Execution contracts are bound to a snapshot created through safe ingestion, not arbitrary host paths. SHA-256 fingerprints expose stale plans before future execution. Patch payloads must be explicit so an executor cannot invent source. This phase validates only and performs no file, command, Git, or deployment operation.
+
 ## Modular analyzer architecture
 
 Analyzers implement a small shared interface and consume a common scan result. This keeps ingestion, scanning, analysis, and report delivery separate and permits later analyzers without rewrites.

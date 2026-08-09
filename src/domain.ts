@@ -45,11 +45,31 @@ export type ChangeCategory = "DEPENDENCY" | "DATABASE" | "AUTHENTICATION" | "API
 export interface ChangeRequest { request: string; category?: ChangeCategory; target?: string; desiredTechnology?: string; }
 export interface ChangeImpactReport { request: ChangeRequest; impactLevel: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"; confidence: "HIGH" | "MEDIUM" | "LOW"; directModules: string[]; indirectModules: string[]; relationships: { from: string; to: string; type: "IMPORTS" | "DEPENDS_ON" }[]; risks: { title: string; evidence: Evidence[]; kind: "EVIDENCE_BACKED" | "GENERAL_CONSIDERATION" }[]; blastRadius: { directModules: number; indirectModules: number; apiRoutes: number; dependencies: number; relatedTests: number; doctorFindings: number }; recommendations: string[]; verification: string[]; evidence: Evidence[]; assumptions: string[]; }
 export type FileOperation = "CREATE" | "MODIFY" | "DELETE" | "RENAME";
-export interface BuildRequest { goal: string; report: AnalysisReport; impact?: ChangeImpactReport; noveltyCandidate?: NoveltyCandidate; plan?: Plan; constraints?: string[]; }
-export interface BuildPlan { objective: string; provenance: AnalysisReport["provenance"]; fileChanges: { path: string; operation: FileOperation; status: "EXISTING_FILE" | "PROPOSED_NEW_FILE"; reason: string; evidence: Evidence[] }[]; dependencyChanges: { operation: "ADD" | "REMOVE" | "REPLACE"; name: string; reason: string; evidence: Evidence[] }[]; testChanges: string[]; risks: string[]; validation: { valid: boolean; errors: string[] }; assumptions: string[]; }
+export interface SnapshotFile { path: string; hash: string; size: number; category: FileCategory; }
+export interface ProjectSnapshot {
+  snapshotId: string;
+  provenance: AnalysisReport["provenance"];
+  files: SnapshotFile[];
+  projectModelFingerprint?: string;
+  dependencies: { name: string; version: string; type: "production" | "development" | "peer" }[];
+  createdAt: string;
+}
+export interface PatchOperation {
+  path: string;
+  operation: FileOperation;
+  expectedExistingHash?: string;
+  content?: string;
+  fromPath?: string;
+  originatingTaskId?: string;
+  evidence: Evidence[];
+  provenance: AnalysisReport["provenance"];
+}
+export interface PatchValidationError { code: "APPROVAL_REQUIRED" | "SNAPSHOT_REQUIRED" | "SNAPSHOT_MISMATCH" | "UNSAFE_PATH" | "MISSING_CONTENT" | "MISSING_EXPECTED_HASH" | "STALE_PLAN" | "UNKNOWN_BUILD_TASK" | "INVALID_PROVENANCE" | "INVALID_OPERATION" | "DELETE_APPROVAL_REQUIRED"; path?: string; message: string; }
+export interface BuildRequest { goal: string; report: AnalysisReport; snapshot?: ProjectSnapshot; impact?: ChangeImpactReport; noveltyCandidate?: NoveltyCandidate; plan?: Plan; constraints?: string[]; }
+export interface BuildPlan { objective: string; provenance: AnalysisReport["provenance"]; sourceSnapshotId?: string; buildTaskIds?: string[]; fileChanges: { path: string; operation: FileOperation; status: "EXISTING_FILE" | "PROPOSED_NEW_FILE"; expectedHash?: string; reason: string; evidence: Evidence[] }[]; dependencyChanges: { operation: "ADD" | "REMOVE" | "REPLACE"; name: string; reason: string; evidence: Evidence[] }[]; testChanges: string[]; risks: string[]; validation: { valid: boolean; errors: string[] }; assumptions: string[]; }
 export type ExecutionStatus = "PENDING" | "APPROVED" | "RUNNING" | "VERIFYING" | "SUCCEEDED" | "FAILED" | "ROLLED_BACK" | "CANCELLED";
-export interface ExecutionRequest { build: BuildPlan; approved: boolean; allowDelete?: boolean; }
-export interface ExecutionResult { status: ExecutionStatus; changes: { path: string; operation: FileOperation; applied: false; reason: string; evidence: Evidence[] }[]; validation: { valid: boolean; errors: string[] }; provenance: AnalysisReport["provenance"]; rollback: { attempted: false; succeeded: false }; limitations: string[]; }
+export interface ExecutionRequest { snapshotId?: string; snapshot?: ProjectSnapshot; build: BuildPlan; patches?: PatchOperation[]; approved: boolean; allowDelete?: boolean; }
+export interface ExecutionResult { status: ExecutionStatus; changes: { path: string; operation: FileOperation; applied: false; reason: string; evidence: Evidence[] }[]; validation: { valid: boolean; errors: string[]; details?: PatchValidationError[] }; provenance: AnalysisReport["provenance"]; rollback: { attempted: false; succeeded: false }; limitations: string[]; }
 
 export interface ScanResult {
   root: string;

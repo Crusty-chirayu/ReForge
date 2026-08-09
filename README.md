@@ -52,6 +52,8 @@ node .\node_modules\tsx\dist\cli.mjs --test test\*.test.ts
 | GET | `/health` | Service health check |
 | POST | `/v1/analyze/archive` | Analyze a multipart ZIP field named `archive` |
 | POST | `/v1/analyze/repository` | Analyze a public HTTPS GitHub repository URL |
+| POST | `/v1/snapshot` | Safely ingest a ZIP and return a compact execution snapshot |
+| POST | `/v1/execute/validate` | Validate snapshot-bound patches without applying them |
 | POST | `/v1/analyze/local` | Development-only local analysis; requires `REFORGE_ENABLE_LOCAL_INGESTION=true` |
 
 Example requests:

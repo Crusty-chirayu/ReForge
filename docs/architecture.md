@@ -31,3 +31,7 @@ Project Brain is a stateless, provider-agnostic layer over deterministic reports
 `PlanningDepartment` consumes the submitted deterministic report and maps Doctor findings to actionable tasks. It calculates transparent priorities, validates affected modules and dependencies, topologically orders tasks, and surfaces dependency cycles instead of returning an impossible order. Planning is deterministic today; no LLM call is required.
 
 The `/v1/analyze/local` endpoint is provided for local development and is disabled unless `REFORGE_ENABLE_LOCAL_INGESTION=true`; this prevents a deployed service from reading arbitrary host paths by default.
+
+## Execution snapshot and patch contract
+
+Phase 9A adds a compact `ProjectSnapshot` at the existing archive-ingestion boundary. It contains normalized paths, SHA-256 fingerprints, sizes, classifications, dependency metadata, and inherited source/license provenance—never file contents or secrets. Snapshot identity lets a BuildPlan identify the reviewed state. Patch operations require explicit content where needed and expected hashes for modifications. Validation rejects unsafe paths, stale fingerprints, incomplete patches, and unknown task references; it never accesses arbitrary host paths or modifies anything.

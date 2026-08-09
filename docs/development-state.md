@@ -1,5 +1,9 @@
 # Development state
 
+## Phase 9A checkpoint
+
+Safe archive-backed snapshots, SHA-256 inventories, snapshot-aware BuildPlan metadata, and non-mutating patch validation are complete. Actual execution remains deferred.
+
 ## Current phase
 
 **Phase 5 - Planning Department**

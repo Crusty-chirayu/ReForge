@@ -1,5 +1,9 @@
 # ReForge roadmap
 
+## Phase 9A - Execution snapshot and patch contract
+
+Completed: safe snapshot and patch-validation foundation. Remaining Phase 9 work requires separately authorized isolated execution; this checkpoint makes no mutation.
+
 ## Phase 1 - Foundation
 
 Objective: safely ingest and scan projects. Major capabilities: Git/ZIP ingestion, workspace isolation, scanner, modular evidence-based reports, and API. It establishes the trustworthy data boundary required by every later phase.
