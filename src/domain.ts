@@ -41,6 +41,9 @@ export interface NoveltyRequest { goal?: string; report: AnalysisReport; }
 export interface NoveltyCandidate { id: string; title: string; description: string; category: NoveltyCategory; strategy: NoveltyStrategy; noveltyScore: number; valueScore: number; feasibilityScore: number; fitScore: number; riskScore: number; confidence: "HIGH" | "MEDIUM" | "LOW"; source: "DETERMINISTIC" | "AI_RECOMMENDATION"; evidence: Evidence[]; affectedModules: string[]; prerequisites: string[]; tradeoffs: string[]; implementationDirection: string; assumptions: string[]; }
 export interface NoveltyCapability { name: string; evidence: Evidence[]; existing: true; }
 export interface NoveltyAnalysis { heuristic: "differentiation + fit + value + feasibility - risk"; capabilities: NoveltyCapability[]; candidates: NoveltyCandidate[]; limitations: string[]; }
+export type ChangeCategory = "DEPENDENCY" | "DATABASE" | "AUTHENTICATION" | "API" | "ARCHITECTURE" | "MODULE" | "FEATURE" | "INFRASTRUCTURE" | "PERFORMANCE" | "SECURITY" | "TECHNOLOGY_MIGRATION" | "UNKNOWN";
+export interface ChangeRequest { request: string; category?: ChangeCategory; target?: string; desiredTechnology?: string; }
+export interface ChangeImpactReport { request: ChangeRequest; impactLevel: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"; confidence: "HIGH" | "MEDIUM" | "LOW"; directModules: string[]; indirectModules: string[]; relationships: { from: string; to: string; type: "IMPORTS" | "DEPENDS_ON" }[]; risks: { title: string; evidence: Evidence[]; kind: "EVIDENCE_BACKED" | "GENERAL_CONSIDERATION" }[]; blastRadius: { directModules: number; indirectModules: number; apiRoutes: number; dependencies: number; relatedTests: number; doctorFindings: number }; recommendations: string[]; verification: string[]; evidence: Evidence[]; assumptions: string[]; }
 
 export interface ScanResult {
   root: string;

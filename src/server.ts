@@ -7,6 +7,7 @@ import { cloneRepository, createWorkspace, extractZipSafely, saveUpload } from "
 import { ProjectBrain } from "./brain.js";
 import { PlanningDepartment } from "./planning.js";
 import { NoveltyEngine } from "./novelty.js";
+import { analyzeImpact } from "./impact.js";
 
 const app = Fastify({ logger: true, bodyLimit: 200 * 1024 * 1024 });
 const engine = new AnalysisEngine();
@@ -25,6 +26,7 @@ app.post("/v1/brain/query", async (request, reply) => {
 });
 app.post("/v1/plan", async (request, reply) => { const body = z.object({ goal: z.string().min(1).max(4_000), report: z.any(), constraints: z.array(z.string()).optional(), priorities: z.array(z.string()).optional(), desiredTechnology: z.string().optional() }).safeParse(request.body); if (!body.success) return reply.code(400).send({ error: "Invalid planning request: goal and deterministic report are required." }); try { return { plan: planner.generate(body.data.report, body.data) }; } catch (error) { return reply.code(400).send({ error: error instanceof Error ? error.message : "Planning failed" }); } });
 app.post("/v1/novelty", async (request, reply) => { const body = z.object({ goal: z.string().max(4_000).optional(), report: z.any() }).safeParse(request.body); if (!body.success) return reply.code(400).send({ error: "Invalid novelty request: deterministic report is required." }); try { return { novelty: novelty.generate({ goal: body.data.goal, report: body.data.report }) }; } catch (error) { return reply.code(400).send({ error: error instanceof Error ? error.message : "Novelty analysis failed" }); } });
+app.post("/v1/impact", async (request, reply) => { const body = z.object({ request: z.string().min(1).max(4_000), report: z.any(), category: z.string().optional() }).safeParse(request.body); if (!body.success) return reply.code(400).send({ error: "Invalid impact request: request and deterministic report are required." }); return analyzeImpact(body.data.report, { request: body.data.request, category: body.data.category as any }); });
 
 app.post("/v1/analyze/repository", async (request, reply) => {
   const body = z.object({ repositoryUrl: z.string().max(2_048) }).safeParse(request.body);
