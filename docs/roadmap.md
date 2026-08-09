@@ -47,3 +47,7 @@ Objective: unify project analysis, planning, impact modeling, patch building, sn
 ## Phase 11 - Autonomous Workflow State Store & Execution Audit Log
 
 Objective: provide crash-safe, deterministic file-backed state persistence (`StateStore`), snapshot indexing, execution history, and structured append-only audit logging (`audit.jsonl`).
+
+## Phase 12 - Persistent Project / Workspace Intelligence
+
+Objective: provide deterministic historical snapshot comparison, file change frequency, churn metrics, evidence-grounded architecture drift detection, project timeline, and query APIs (`GET /v1/snapshots/:beforeId/compare/:afterId`, `GET /v1/snapshot/:snapshotId/intelligence`, `GET /v1/project/history`).

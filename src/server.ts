@@ -19,6 +19,12 @@ import { executePatchesInWorkspace, validateExecution } from "./execution.js";
 import { createProjectSnapshot } from "./snapshot.js";
 import { runPipeline } from "./pipeline.js";
 import { StateStore } from "./state-store.js";
+import { compareSnapshots } from "./snapshot-diff.js";
+import {
+  generateHistoricalIntelligence,
+  getProjectHistoryTimeline,
+} from "./historical-intelligence.js";
+
 
 const app = Fastify({
   logger: process.env.NODE_ENV !== "test" && process.env.REFORGE_SKIP_LISTEN !== "true",
@@ -701,7 +707,109 @@ app.get("/v1/snapshot/:snapshotId", async (request, reply) => {
 });
 
 /*
+ * Phase 12 Query Endpoints
+ */
+
+app.get("/v1/snapshots/:beforeId/compare/:afterId", async (request, reply) => {
+  const params = request.params as { beforeId?: string; afterId?: string };
+  const { beforeId, afterId } = params;
+
+  if (!beforeId || !afterId || typeof beforeId !== "string" || typeof afterId !== "string") {
+    return reply.code(400).send({ error: "Both beforeId and afterId parameters are required." });
+  }
+
+  const ID_REGEX = /^[a-zA-Z0-9_-]+$/;
+  if (
+    !ID_REGEX.test(beforeId) ||
+    !ID_REGEX.test(afterId) ||
+    beforeId.includes("..") ||
+    afterId.includes("..")
+  ) {
+    return reply.code(400).send({ error: "Invalid snapshot ID format." });
+  }
+
+  try {
+    const before = await store.getSnapshot(beforeId);
+    const after = await store.getSnapshot(afterId);
+
+    if (!before || !after) {
+      return reply.code(404).send({ error: "One or both requested snapshots were not found." });
+    }
+
+    const diff = compareSnapshots(before, after);
+    return { diff };
+  } catch {
+    return reply.code(404).send({ error: "Snapshot comparison failed." });
+  }
+});
+
+app.get("/v1/snapshot/:snapshotId/intelligence", async (request, reply) => {
+  const params = request.params as { snapshotId?: string };
+  const snapshotId = params.snapshotId;
+
+  if (!snapshotId || typeof snapshotId !== "string") {
+    return reply.code(400).send({ error: "Snapshot ID is required." });
+  }
+
+  const ID_REGEX = /^[a-zA-Z0-9_-]+$/;
+  if (!ID_REGEX.test(snapshotId) || snapshotId.includes("..")) {
+    return reply.code(400).send({ error: "Invalid snapshot ID format." });
+  }
+
+  const query = z
+    .object({
+      historyLimit: z.coerce.number().int().min(1).max(50).optional(),
+    })
+    .safeParse(request.query);
+
+  if (!query.success) {
+    return reply.code(400).send({
+      error: "Invalid historyLimit parameter. Must be an integer between 1 and 50.",
+    });
+  }
+
+  const historyLimit = query.data.historyLimit ?? 10;
+
+  try {
+    const intelligence = await generateHistoricalIntelligence(
+      snapshotId,
+      store,
+      historyLimit,
+    );
+    return { intelligence };
+  } catch (error) {
+    return reply.code(404).send({
+      error: error instanceof Error ? error.message : "Snapshot intelligence failed.",
+    });
+  }
+});
+
+app.get("/v1/project/history", async (request, reply) => {
+  const query = z
+    .object({
+      limit: z.coerce.number().int().min(1).max(100).optional(),
+    })
+    .safeParse(request.query);
+
+  if (!query.success) {
+    return reply.code(400).send({
+      error: "Invalid limit parameter. Limit must be an integer between 1 and 100.",
+    });
+  }
+
+  const limit = query.data.limit ?? 20;
+  const history = await getProjectHistoryTimeline(store, limit);
+
+  return {
+    history,
+    limit,
+    count: history.length,
+  };
+});
+
+/*
  * Existing Phase 9 validation endpoint.
+
 
 
  *

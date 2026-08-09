@@ -4,7 +4,7 @@ ReForge AI is an evidence-first software project analysis platform. It ingests a
 
 ## Current phase
 
-**Phase 11 - Autonomous Workflow State Store & Execution Audit Log** is complete. ReForge provides crash-safe file-backed state persistence (`StateStore`), snapshot indexing, execution history query APIs (`GET /v1/pipeline/history`, `GET /v1/pipeline/:id`), snapshot lookup (`GET /v1/snapshot/:id`), and append-only audit event logging (`audit.jsonl`).
+**Phase 12 - Persistent Project / Workspace Intelligence** is complete. ReForge provides deterministic historical snapshot comparison (`GET /v1/snapshots/:beforeId/compare/:afterId`), file change frequency rankings, project churn metrics, evidence-grounded architecture drift detection (`GET /v1/snapshot/:snapshotId/intelligence`), and project history timeline query APIs (`GET /v1/project/history`).
 
 ## Current capabilities
 
@@ -21,6 +21,7 @@ ReForge AI is an evidence-first software project analysis platform. It ingests a
 - Ingest a trusted ZIP at `POST /v1/execute`, generate a server-controlled snapshot, re-hash files, apply approved patches inside a disposable workspace, return an `ExecutionReceipt`, and dispose of the workspace cleanly.
 - Run end-to-end autonomous pipeline at `POST /v1/pipeline` unifying ingestion, X-Ray, Doctor, planning, impact analysis, patch generation, isolated execution, server-derived verification, and receipts.
 - Persist pipeline executions, snapshots, and lifecycle audit events safely in `.reforge/store/` with history listing (`GET /v1/pipeline/history`) and receipt/snapshot query endpoints (`GET /v1/pipeline/:id`, `GET /v1/snapshot/:id`).
+- Compute deterministic snapshot comparisons, change frequency, churn, architecture drift, and project history (`GET /v1/snapshots/:beforeId/compare/:afterId`, `GET /v1/snapshot/:id/intelligence`, `GET /v1/project/history`).
 
 ## Architecture
 
@@ -62,7 +63,11 @@ node .\node_modules\tsx\dist\cli.mjs --test test\*.test.ts
 | GET | `/v1/pipeline/history` | List recent pipeline executions with optional limit query parameter |
 | GET | `/v1/pipeline/:pipelineId` | Get full execution receipt for a recorded pipeline execution |
 | GET | `/v1/snapshot/:snapshotId` | Get stored snapshot metadata by snapshotId |
+| GET | `/v1/snapshots/:beforeId/compare/:afterId` | Compare two snapshots deterministically |
+| GET | `/v1/snapshot/:snapshotId/intelligence` | Get historical intelligence, change frequency, churn, and drift |
+| GET | `/v1/project/history` | Get historical project snapshot timeline |
 | POST | `/v1/analyze/local` | Development-only local analysis; requires `REFORGE_ENABLE_LOCAL_INGESTION=true` |
+
 
 
 

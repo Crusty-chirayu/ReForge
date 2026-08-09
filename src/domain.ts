@@ -163,6 +163,110 @@ export interface PipelineAuditLogEntry {
   details?: Record<string, unknown>;
 }
 
+export type FileDiffOperation = "CREATE" | "MODIFY" | "DELETE" | "RENAME" | "UNCHANGED";
+
+export interface SnapshotFileDiff {
+  path: string;
+  operation: FileDiffOperation;
+  beforeHash?: string;
+  afterHash?: string;
+  beforeSize?: number;
+  afterSize?: number;
+  fromPath?: string;
+  toPath?: string;
+  category?: FileCategory;
+}
+
+export interface SnapshotDependencyDiff {
+  operation: "ADD" | "REMOVE" | "VERSION_CHANGE";
+  name: string;
+  beforeVersion?: string;
+  afterVersion?: string;
+  type?: "production" | "development" | "peer";
+}
+
+export interface SnapshotDiff {
+  beforeSnapshotId: string;
+  afterSnapshotId: string;
+  created: SnapshotFileDiff[];
+  modified: SnapshotFileDiff[];
+  deleted: SnapshotFileDiff[];
+  unchanged: SnapshotFileDiff[];
+  renamed: SnapshotFileDiff[];
+  dependencyChanges: SnapshotDependencyDiff[];
+  moduleChanges: { added: string[]; removed: string[] };
+  projectModelChanged: boolean;
+  categoryDistribution: Partial<Record<FileCategory, { before: number; after: number }>>;
+  summary: {
+    totalCreated: number;
+    totalModified: number;
+    totalDeleted: number;
+    totalUnchanged: number;
+    totalRenamed: number;
+    totalAddedBytes: number;
+    totalDeletedBytes: number;
+  };
+}
+
+export interface FileChangeFrequency {
+  path: string;
+  changeCount: number;
+  transitionCount: number;
+  changeRate: number;
+}
+
+export interface HistoricalChurnSummary {
+  totalAddedFiles: number;
+  totalDeletedFiles: number;
+  totalModifiedFiles: number;
+  totalRenamedFiles: number;
+  totalAddedBytes: number;
+  totalDeletedBytes: number;
+}
+
+export interface ArchitectureDrift {
+  detected: boolean;
+  indicators: string[];
+  moduleChanges: { added: string[]; removed: string[] };
+  dependencyChanges: SnapshotDependencyDiff[];
+  projectModelChanged: boolean;
+  confidence: "HIGH" | "MEDIUM" | "LOW";
+  evidence: Evidence[];
+  limitations: string[];
+}
+
+export interface HistoricalProjectIntelligence {
+  projectSnapshotId: string;
+  previousSnapshotId?: string;
+  snapshotCount: number;
+  totalFiles: number;
+  sourceFileCount: number;
+  testFileCount: number;
+  dependencyCount: number;
+  filesAddedSincePrevious: number;
+  filesModifiedSincePrevious: number;
+  filesDeletedSincePrevious: number;
+  filesRenamedSincePrevious: number;
+  dependencyChanges: SnapshotDependencyDiff[];
+  moduleChanges: { added: string[]; removed: string[] };
+  projectModelChanged: boolean;
+  changeFrequency: FileChangeFrequency[];
+  churnSummary: HistoricalChurnSummary;
+  architectureDrift: ArchitectureDrift;
+  evidence: Evidence[];
+}
+
+export interface ProjectHistoryItem {
+  snapshotId: string;
+  pipelineId?: string;
+  createdAt: string;
+  fileCount: number;
+  dependencyFingerprint?: string;
+  projectModelFingerprint?: string;
+  verificationStatus?: VerificationStatus;
+}
+
+
 
 
 

@@ -6,7 +6,8 @@ Safe archive-backed snapshots, SHA-256 inventories, snapshot-aware BuildPlan met
 
 ## Current phase
 
-**Phase 11 - Autonomous Workflow State Store & Execution Audit Log**
+**Phase 12 - Persistent Project / Workspace Intelligence**
+
 
 
 

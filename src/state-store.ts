@@ -17,21 +17,31 @@ function validateId(id: string, name: string): void {
 }
 
 export class StateStore {
-  private baseDir: string;
-  private executionsDir: string;
-  private snapshotsDir: string;
-  private auditFile: string;
+  private customStoreDir?: string;
 
   constructor(customStoreDir?: string) {
+    this.customStoreDir = customStoreDir;
+  }
+
+  public get baseDir(): string {
     const rawDir =
-      customStoreDir ??
+      this.customStoreDir ??
       process.env.REFORGE_STORE_DIR ??
       path.join(process.cwd(), ".reforge", "store");
 
-    this.baseDir = path.resolve(rawDir);
-    this.executionsDir = path.join(this.baseDir, "executions");
-    this.snapshotsDir = path.join(this.baseDir, "snapshots");
-    this.auditFile = path.join(this.baseDir, "audit.jsonl");
+    return path.resolve(rawDir);
+  }
+
+  public get executionsDir(): string {
+    return path.join(this.baseDir, "executions");
+  }
+
+  public get snapshotsDir(): string {
+    return path.join(this.baseDir, "snapshots");
+  }
+
+  public get auditFile(): string {
+    return path.join(this.baseDir, "audit.jsonl");
   }
 
   public getStoreDir(): string {
@@ -42,6 +52,7 @@ export class StateStore {
     await fs.mkdir(this.executionsDir, { recursive: true });
     await fs.mkdir(this.snapshotsDir, { recursive: true });
   }
+
 
   /**
    * Atomic crash-safe write using temp file and rename.
@@ -162,6 +173,38 @@ export class StateStore {
       return undefined;
     }
   }
+
+  /**
+   * Lists historical stored ProjectSnapshots up to the specified limit (max 100).
+   */
+  public async getSnapshots(limit = 50): Promise<ProjectSnapshot[]> {
+    await this.ensureDirectories();
+    const safeLimit = Math.min(Math.max(1, limit), 100);
+
+    let filenames: string[] = [];
+    try {
+      filenames = await fs.readdir(this.snapshotsDir);
+    } catch {
+      return [];
+    }
+
+    const snapshots: ProjectSnapshot[] = [];
+
+    for (const file of filenames) {
+      if (!file.endsWith(".json")) continue;
+      try {
+        const fullPath = path.join(this.snapshotsDir, file);
+        const content = await fs.readFile(fullPath, "utf-8");
+        snapshots.push(JSON.parse(content) as ProjectSnapshot);
+      } catch {}
+    }
+
+    // Sort reverse-chronologically by createdAt timestamp
+    snapshots.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+
+    return snapshots.slice(0, safeLimit);
+  }
+
 
   /**
    * Appends an audit log entry in JSONL format.
