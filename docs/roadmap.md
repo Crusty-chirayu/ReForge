@@ -39,3 +39,7 @@ Objective: propose and eventually implement bounded, reviewable changes with tes
 ## Phase 9 - Verification and autonomous engineering workflows
 
 Objective: verify changes and coordinate controlled engineering workflows. It depends on all prior evidence, planning, impact, and builder capabilities.
+
+## Phase 10 - End-to-End Autonomous Engineering Pipeline Orchestration
+
+Objective: unify project analysis, planning, impact modeling, patch building, snapshotting, execution, and verification into a single safe, server-controlled pipeline (`POST /v1/pipeline`).

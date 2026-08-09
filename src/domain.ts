@@ -112,6 +112,30 @@ export interface ExecutionReceipt {
 }
 export interface ExecutionResult { status: ExecutionStatus; changes: { path: string; operation: FileOperation; applied: boolean; reason: string; evidence: Evidence[] }[]; validation: { valid: boolean; errors: string[]; details?: PatchValidationError[] }; provenance: AnalysisReport["provenance"]; rollback: { attempted: boolean; succeeded: boolean }; receipt?: ExecutionReceipt; limitations: string[]; }
 
+export interface PipelineRequest {
+  goal: string;
+  approved: boolean;
+  allowDelete?: boolean;
+  verify?: boolean;
+}
+
+export interface PipelineResult {
+  pipelineId: string;
+  status: "PASSED" | "FAILED" | "BLOCKED" | "ERROR";
+  goal: string;
+  report: AnalysisReport;
+  plan: Plan;
+  impact: ChangeImpactReport;
+  build: BuildPlan;
+  execution?: ExecutionReceipt;
+  snapshot: ProjectSnapshot;
+  workspaceCleanupStatus: "SUCCESS" | "FAILED";
+  createdAt: string;
+  completedAt: string;
+}
+
+
+
 
 export interface ScanResult {
   root: string;

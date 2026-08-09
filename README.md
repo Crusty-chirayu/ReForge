@@ -4,7 +4,7 @@ ReForge AI is an evidence-first software project analysis platform. It ingests a
 
 ## Current phase
 
-**Phase 9B - Trusted Isolated Patch Application** is complete. ReForge provides trusted ZIP ingestion, server-controlled snapshotting, pre-mutation re-hashing, atomic isolated patch application (CREATE, MODIFY, RENAME, DELETE with approval), execution receipts, diff summaries, and automatic workspace disposal.
+**Phase 10 - End-to-End Autonomous Engineering Pipeline Orchestration** is complete. ReForge provides trusted end-to-end autonomous engineering pipeline orchestration (`POST /v1/pipeline`) combining analysis, plan generation, impact modeling, patch building, server-controlled snapshotting, isolated patch application, controlled verification command execution, and unified execution receipt return.
 
 ## Current capabilities
 
@@ -19,6 +19,7 @@ ReForge AI is an evidence-first software project analysis platform. It ingests a
 - Provide a provider-agnostic, stateless Project Brain query foundation. AI output is explicitly marked inference and cannot replace deterministic facts.
 - Generate deterministic plans with priorities, dependencies, affected modules, risks, acceptance criteria, and verification guidance at `POST /v1/plan`.
 - Ingest a trusted ZIP at `POST /v1/execute`, generate a server-controlled snapshot, re-hash files, apply approved patches inside a disposable workspace, return an `ExecutionReceipt`, and dispose of the workspace cleanly.
+- Run end-to-end autonomous pipeline at `POST /v1/pipeline` unifying ingestion, X-Ray, Doctor, planning, impact analysis, patch generation, isolated execution, server-derived verification, and receipts.
 
 ## Architecture
 
@@ -56,7 +57,9 @@ node .\node_modules\tsx\dist\cli.mjs --test test\*.test.ts
 | POST | `/v1/snapshot` | Safely ingest a ZIP and return a compact execution snapshot |
 | POST | `/v1/execute` | Ingest trusted ZIP, apply approved patches inside disposable workspace, and return execution receipt |
 | POST | `/v1/execute/validate` | Validate snapshot-bound patches without applying them |
+| POST | `/v1/pipeline` | Ingest trusted ZIP and run end-to-end autonomous engineering pipeline |
 | POST | `/v1/analyze/local` | Development-only local analysis; requires `REFORGE_ENABLE_LOCAL_INGESTION=true` |
+
 
 Example requests:
 

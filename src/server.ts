@@ -17,6 +17,8 @@ import { analyzeImpact } from "./impact.js";
 import { ReforgeBuilder } from "./builder.js";
 import { executePatchesInWorkspace, validateExecution } from "./execution.js";
 import { createProjectSnapshot } from "./snapshot.js";
+import { runPipeline } from "./pipeline.js";
+
 
 const app = Fastify({
   logger: process.env.NODE_ENV !== "test" && process.env.REFORGE_SKIP_LISTEN !== "true",
@@ -480,7 +482,153 @@ try {
 });
 
 /*
+ * Phase 10
+ *
+ * End-to-End Autonomous Engineering Pipeline endpoint.
+ *
+ * Client supplies:
+ *   - multipart archive (.zip)
+ *   - JSON string in request field containing PipelineRequest:
+ *     { goal: string, approved: boolean, allowDelete?: boolean, verify?: boolean }
+ *
+ * Client is REJECTED if supplying:
+ *   - command, shell, exec, args, cwd, script, env overrides
+ */
+app.post("/v1/pipeline", async (request, reply) => {
+  const workspace = await createWorkspace();
+
+  try {
+    let archivePart: Awaited<ReturnType<typeof request.file>> | undefined;
+    let pipelinePayload: unknown;
+
+    for await (const part of request.parts()) {
+      if (part.type === "file") {
+        if (part.fieldname !== "archive") {
+          part.file.resume();
+          return reply.code(400).send({
+            error: "Only the multipart file field named 'archive' is accepted.",
+          });
+        }
+
+        if (!part.filename.toLowerCase().endsWith(".zip")) {
+          part.file.resume();
+          return reply.code(400).send({
+            error: "Only .zip archives are accepted for pipeline execution.",
+          });
+        }
+
+        if (archivePart) {
+          part.file.resume();
+          return reply.code(400).send({
+            error: "Only one pipeline execution archive is allowed.",
+          });
+        }
+
+        archivePart = part;
+      } else {
+        if (part.fieldname === "request") {
+          if (typeof part.value !== "string") {
+            return reply.code(400).send({
+              error: "The 'request' field must contain a JSON string.",
+            });
+          }
+
+          try {
+            pipelinePayload = JSON.parse(part.value);
+          } catch {
+            return reply.code(400).send({
+              error: "The 'request' field must contain valid JSON.",
+            });
+          }
+        }
+      }
+    }
+
+    if (!archivePart) {
+      return reply.code(400).send({
+        error: "Expected a multipart .zip field named 'archive'.",
+      });
+    }
+
+    if (!pipelinePayload) {
+      return reply.code(400).send({
+        error: "Expected a JSON field named 'request' containing the pipeline request.",
+      });
+    }
+
+    if (
+      typeof pipelinePayload === "object" &&
+      pipelinePayload !== null &&
+      ("command" in pipelinePayload ||
+        "shell" in pipelinePayload ||
+        "exec" in pipelinePayload ||
+        "args" in pipelinePayload ||
+        "cwd" in pipelinePayload ||
+        "script" in pipelinePayload ||
+        "env" in pipelinePayload)
+    ) {
+      return reply.code(400).send({
+        error: "Arbitrary executable, command, shell, args, cwd, or environment overrides are not permitted.",
+      });
+    }
+
+    const parsedRequest = z
+      .object({
+        goal: z.string().min(1).max(4_000),
+        approved: z.boolean(),
+        allowDelete: z.boolean().optional(),
+        verify: z.boolean().optional(),
+      })
+      .safeParse(pipelinePayload);
+
+    if (!parsedRequest.success) {
+      return reply.code(400).send({
+        error: "Invalid pipeline request: goal and approved are required.",
+        details: parsedRequest.error.flatten(),
+      });
+    }
+
+    const archive = await saveUpload(archivePart.file, workspace.root);
+    const project = path.join(workspace.root, "project");
+    await extractZipSafely(archive, project);
+
+    let cleanupStatus: "SUCCESS" | "FAILED" = "SUCCESS";
+    let result;
+    try {
+      result = await runPipeline(project, parsedRequest.data, {
+        kind: "archive",
+        reference: archivePart.filename,
+      });
+    } finally {
+      try {
+        await workspace.cleanup();
+      } catch {
+        cleanupStatus = "FAILED";
+      }
+    }
+
+    if (result) {
+      result.workspaceCleanupStatus = cleanupStatus;
+    }
+
+    return {
+      pipeline: result,
+      result,
+    };
+  } catch (error) {
+    try {
+      await workspace.cleanup();
+    } catch {}
+
+    return reply.code(400).send({
+      error: error instanceof Error ? error.message : "Pipeline execution failed",
+    });
+  }
+});
+
+/*
  * Existing Phase 9 validation endpoint.
+
  *
  * Kept for backward compatibility.
  * This endpoint remains validation-only and accepts a
