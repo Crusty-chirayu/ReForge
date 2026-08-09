@@ -35,6 +35,11 @@ export interface PlanningRequest { goal: string; constraints?: string[]; priorit
 export interface PlanTask { id: string; title: string; objective: string; priority: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW"; dependencies: string[]; affectedModules: string[]; evidence: Evidence[]; acceptanceCriteria: string[]; verification: string[]; }
 export interface PlanRisk { title: string; probability: "LOW" | "MEDIUM" | "HIGH"; impact: "LOW" | "MEDIUM" | "HIGH"; mitigation: string; evidence: Evidence[]; }
 export interface Plan { objective: string; assumptions: string[]; tasks: PlanTask[]; orderedTaskIds: string[]; risks: PlanRisk[]; unresolvedQuestions: string[]; validation: { valid: boolean; errors: string[]; priorityFormula: "severityWeight + confidenceWeight - effortWeight" }; }
+export type NoveltyCategory = "PRODUCT" | "FEATURE" | "UX" | "ARCHITECTURE" | "AI" | "AUTOMATION" | "SECURITY" | "PERFORMANCE" | "DEVELOPER_EXPERIENCE" | "BUSINESS_LOGIC";
+export type NoveltyStrategy = "COMBINATION" | "GAP" | "TRANSFORMATION" | "ARCHITECTURAL" | "AI_AUGMENTATION" | "AUTOMATION";
+export interface NoveltyRequest { goal?: string; report: AnalysisReport; }
+export interface NoveltyCandidate { id: string; title: string; description: string; category: NoveltyCategory; strategy: NoveltyStrategy; noveltyScore: number; valueScore: number; feasibilityScore: number; fitScore: number; riskScore: number; confidence: "HIGH" | "MEDIUM" | "LOW"; source: "DETERMINISTIC" | "AI_RECOMMENDATION"; evidence: Evidence[]; affectedModules: string[]; prerequisites: string[]; tradeoffs: string[]; implementationDirection: string; assumptions: string[]; }
+export interface NoveltyAnalysis { heuristic: "differentiation + fit + value + feasibility - risk"; candidates: NoveltyCandidate[]; limitations: string[]; }
 
 export interface ScanResult {
   root: string;
