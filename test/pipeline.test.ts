@@ -150,10 +150,11 @@ test("2. Pipeline execution mode (approved: true) applies patches and performs c
     assert.ok(result.execution.verification);
     assert.equal(result.execution.verification.overallStatus, "PASSED");
   } finally {
-
     await execWorkspace.cleanup();
   }
+
 });
+
 
 test("3. HTTP API POST /v1/pipeline executes end-to-end pipeline and returns 200", async () => {
   const zipBuf = storedZip([

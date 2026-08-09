@@ -43,3 +43,7 @@ Objective: verify changes and coordinate controlled engineering workflows. It de
 ## Phase 10 - End-to-End Autonomous Engineering Pipeline Orchestration
 
 Objective: unify project analysis, planning, impact modeling, patch building, snapshotting, execution, and verification into a single safe, server-controlled pipeline (`POST /v1/pipeline`).
+
+## Phase 11 - Autonomous Workflow State Store & Execution Audit Log
+
+Objective: provide crash-safe, deterministic file-backed state persistence (`StateStore`), snapshot indexing, execution history, and structured append-only audit logging (`audit.jsonl`).

@@ -134,6 +134,36 @@ export interface PipelineResult {
   completedAt: string;
 }
 
+export interface PipelineExecutionSummary {
+  pipelineId: string;
+  goal: string;
+  status: "PASSED" | "FAILED" | "BLOCKED" | "ERROR";
+  snapshotId: string;
+  approved: boolean;
+  appliedPatchCount: number;
+  verificationStatus?: VerificationStatus;
+  createdAt: string;
+  completedAt: string;
+}
+
+export interface PipelineAuditLogEntry {
+  auditId: string;
+  pipelineId: string;
+  timestamp: string;
+  eventType:
+    | "INGESTED"
+    | "SNAPSHOT_CREATED"
+    | "PLAN_GENERATED"
+    | "IMPACT_EVALUATED"
+    | "BUILD_PROPOSED"
+    | "PATCHES_APPLIED"
+    | "VERIFICATION_COMPLETED"
+    | "ROLLED_BACK"
+    | "CLEANED_UP";
+  details?: Record<string, unknown>;
+}
+
+
 
 
 

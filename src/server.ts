@@ -18,7 +18,7 @@ import { ReforgeBuilder } from "./builder.js";
 import { executePatchesInWorkspace, validateExecution } from "./execution.js";
 import { createProjectSnapshot } from "./snapshot.js";
 import { runPipeline } from "./pipeline.js";
-
+import { StateStore } from "./state-store.js";
 
 const app = Fastify({
   logger: process.env.NODE_ENV !== "test" && process.env.REFORGE_SKIP_LISTEN !== "true",
@@ -30,6 +30,8 @@ const brain = new ProjectBrain();
 const planner = new PlanningDepartment();
 const novelty = new NoveltyEngine();
 const builder = new ReforgeBuilder();
+const store = new StateStore();
+
 
 await app.register(multipart, {
   limits: {
@@ -609,6 +611,13 @@ app.post("/v1/pipeline", async (request, reply) => {
 
     if (result) {
       result.workspaceCleanupStatus = cleanupStatus;
+      await store
+        .appendAuditEvent({
+          pipelineId: result.pipelineId,
+          eventType: "CLEANED_UP",
+          details: { workspaceCleanupStatus: cleanupStatus },
+        })
+        .catch(() => {});
     }
 
     return {
@@ -627,7 +636,73 @@ app.post("/v1/pipeline", async (request, reply) => {
 });
 
 /*
+ * Phase 11 Query Endpoints
+ */
+
+app.get("/v1/pipeline/history", async (request, reply) => {
+  const query = z
+    .object({
+      limit: z.coerce.number().int().min(1).max(200).optional(),
+    })
+    .safeParse(request.query);
+
+  if (!query.success) {
+    return reply.code(400).send({
+      error: "Invalid limit parameter. Limit must be an integer between 1 and 200.",
+    });
+  }
+
+  const limit = query.data.limit ?? 50;
+  const history = await store.listExecutions(limit);
+
+  return {
+    history,
+    limit,
+    count: history.length,
+  };
+});
+
+app.get("/v1/pipeline/:pipelineId", async (request, reply) => {
+  const params = request.params as { pipelineId?: string };
+  const pipelineId = params.pipelineId;
+
+  if (!pipelineId || typeof pipelineId !== "string") {
+    return reply.code(400).send({ error: "Pipeline ID is required." });
+  }
+
+  try {
+    const execution = await store.getExecution(pipelineId);
+    if (!execution) {
+      return reply.code(404).send({ error: "Execution receipt not found." });
+    }
+    return { execution, result: execution };
+  } catch {
+    return reply.code(404).send({ error: "Execution receipt not found." });
+  }
+});
+
+app.get("/v1/snapshot/:snapshotId", async (request, reply) => {
+  const params = request.params as { snapshotId?: string };
+  const snapshotId = params.snapshotId;
+
+  if (!snapshotId || typeof snapshotId !== "string") {
+    return reply.code(400).send({ error: "Snapshot ID is required." });
+  }
+
+  try {
+    const snapshot = await store.getSnapshot(snapshotId);
+    if (!snapshot) {
+      return reply.code(404).send({ error: "Snapshot not found." });
+    }
+    return { snapshot };
+  } catch {
+    return reply.code(404).send({ error: "Snapshot not found." });
+  }
+});
+
+/*
  * Existing Phase 9 validation endpoint.
+
 
  *
  * Kept for backward compatibility.
@@ -866,11 +941,18 @@ if (
 
 export { app };
 
-if (process.env.REFORGE_SKIP_LISTEN !== "true" && process.env.NODE_ENV !== "test") {
-  const port = Number(
-    process.env.PORT ?? 3000,
-  );
+import { fileURLToPath } from "node:url";
 
+const isMainModule =
+  process.argv[1] !== undefined &&
+  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (
+  isMainModule &&
+  process.env.REFORGE_SKIP_LISTEN !== "true" &&
+  process.env.NODE_ENV !== "test"
+) {
+  const port = Number(process.env.PORT ?? 3000);
   await app.listen({
     host: "127.0.0.1",
     port,
