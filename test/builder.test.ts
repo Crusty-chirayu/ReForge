@@ -1,0 +1,5 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { ReforgeBuilder } from "../src/builder.js";
+import type { BuildRequest } from "../src/domain.js";
+test("creates review-only build changes from impact evidence", () => { const request = { goal: "Migrate database", report: { provenance: { source: { kind: "archive" }, licenses: [], copyrightNotices: [] }, projectModel: { modules: [{ id: "src/db.ts" }] } }, impact: { request: { category: "DATABASE", desiredTechnology: "pg" }, directModules: ["src/db.ts"], indirectModules: [], evidence: [{ file: "src/db.ts", detail: "imports mongodb" }], risks: [{ title: "migration risk" }] } } as unknown as BuildRequest; const build = new ReforgeBuilder().generate(request); assert.ok(build.fileChanges.some((x) => x.path === "src/db.ts" && x.status === "EXISTING_FILE")); assert.ok(build.fileChanges.some((x) => x.status === "PROPOSED_NEW_FILE")); assert.equal(build.dependencyChanges[0]?.name, "pg"); assert.equal(build.provenance.source.kind, "archive"); });

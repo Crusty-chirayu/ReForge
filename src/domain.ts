@@ -44,6 +44,9 @@ export interface NoveltyAnalysis { heuristic: "differentiation + fit + value + f
 export type ChangeCategory = "DEPENDENCY" | "DATABASE" | "AUTHENTICATION" | "API" | "ARCHITECTURE" | "MODULE" | "FEATURE" | "INFRASTRUCTURE" | "PERFORMANCE" | "SECURITY" | "TECHNOLOGY_MIGRATION" | "UNKNOWN";
 export interface ChangeRequest { request: string; category?: ChangeCategory; target?: string; desiredTechnology?: string; }
 export interface ChangeImpactReport { request: ChangeRequest; impactLevel: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"; confidence: "HIGH" | "MEDIUM" | "LOW"; directModules: string[]; indirectModules: string[]; relationships: { from: string; to: string; type: "IMPORTS" | "DEPENDS_ON" }[]; risks: { title: string; evidence: Evidence[]; kind: "EVIDENCE_BACKED" | "GENERAL_CONSIDERATION" }[]; blastRadius: { directModules: number; indirectModules: number; apiRoutes: number; dependencies: number; relatedTests: number; doctorFindings: number }; recommendations: string[]; verification: string[]; evidence: Evidence[]; assumptions: string[]; }
+export type FileOperation = "CREATE" | "MODIFY" | "DELETE" | "RENAME";
+export interface BuildRequest { goal: string; report: AnalysisReport; impact?: ChangeImpactReport; noveltyCandidate?: NoveltyCandidate; plan?: Plan; constraints?: string[]; }
+export interface BuildPlan { objective: string; provenance: AnalysisReport["provenance"]; fileChanges: { path: string; operation: FileOperation; status: "EXISTING_FILE" | "PROPOSED_NEW_FILE"; reason: string; evidence: Evidence[] }[]; dependencyChanges: { operation: "ADD" | "REMOVE" | "REPLACE"; name: string; reason: string; evidence: Evidence[] }[]; testChanges: string[]; risks: string[]; validation: { valid: boolean; errors: string[] }; assumptions: string[]; }
 
 export interface ScanResult {
   root: string;
