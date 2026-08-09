@@ -29,6 +29,8 @@ export type DoctorSeverity = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "INFO";
 export type DoctorCategory = "CODE_QUALITY" | "SECURITY" | "ARCHITECTURE" | "TESTING" | "DEPENDENCY" | "PERFORMANCE" | "MAINTAINABILITY" | "RISK";
 export interface DoctorFinding { ruleId: string; category: DoctorCategory; severity: DoctorSeverity; confidence: "HIGH" | "MEDIUM" | "LOW"; title: string; description: string; impact: string; remediation: string; evidence: Evidence[]; affectedFiles?: string[]; affectedModules?: string[]; }
 export interface DoctorReport { healthScore: number; summary: { findingCount: number; bySeverity: Record<DoctorSeverity, number>; byCategory: Partial<Record<DoctorCategory, number>>; scoring: "100 - min(100, sum(severityWeight * confidenceWeight))" }; findings: DoctorFinding[]; }
+export interface BrainInference { statement: string; confidence: "HIGH" | "MEDIUM" | "LOW"; verified: false; }
+export interface BrainResponse { answer: string; confidence: "HIGH" | "MEDIUM" | "LOW"; inferences: BrainInference[]; evidence: Evidence[]; limitations: string[]; contextUsed: string[]; contextTruncated: boolean; }
 
 export interface ScanResult {
   root: string;

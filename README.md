@@ -4,7 +4,7 @@ ReForge AI is an evidence-first software project analysis platform. It ingests a
 
 ## Current phase
 
-**Phase 3 - Project Doctor** is complete. ReForge adds deterministic, evidence-backed diagnostics on top of Project X-Ray facts.
+**Phase 4 - Project Brain** is complete. ReForge can form bounded, evidence-aware LLM context from deterministic X-Ray and Doctor results.
 
 ## Current capabilities
 
@@ -16,6 +16,7 @@ ReForge AI is an evidence-first software project analysis platform. It ingests a
 - Detect common Fastify/Express-style route calls with literal paths, plus supported database and authentication technologies when project evidence exists.
 - Preserve provenance and return evidence for important findings. Environment files are reported only as metadata; their values are never returned.
 - Produce Project Doctor findings for selected large-file/module, duplicate-import, coupling/cycle, missing-test, dependency-count, and hardcoded-secret indicators, with remediation and a heuristic health score.
+- Provide a provider-agnostic, stateless Project Brain query foundation. AI output is explicitly marked inference and cannot replace deterministic facts.
 
 ## Architecture
 
@@ -24,6 +25,8 @@ ReForge AI is an evidence-first software project analysis platform. It ingests a
 `AnalysisEngine` orchestrates analyzers over a shared scan result. The Project X-Ray analyzer uses the TypeScript compiler API for TypeScript and JavaScript AST analysis. Static facts remain separate from any future AI inference.
 
 Project Doctor consumes `projectModel` rather than rescanning projects. Its health score is `100 - min(100, sum(severityWeight * confidenceWeight))`; it is a prioritization heuristic, not an objective quality measurement.
+
+Project Brain accepts a deterministic report and question at `POST /v1/brain/query`. It requires a configured provider; without one it returns a safe 503 and normal analysis remains available.
 
 See [architecture documentation](docs/architecture.md) and [architectural decisions](docs/decisions.md).
 

@@ -14,7 +14,7 @@ Objective: diagnose quality, security, testing, dependency, and maintainability 
 
 ## Phase 4 - Project Brain
 
-Objective: build durable project understanding and retrieval over verified static facts. It depends on Doctor/X-Ray outputs to ground higher-level understanding.
+Objective: build evidence-aware LLM reasoning over verified static and diagnostic facts. Major capabilities: bounded context construction, provider abstraction, inference separation, and citation validation. It depends on X-Ray and Doctor outputs to ground AI responses.
 
 ## Phase 5 - Planning Department
 

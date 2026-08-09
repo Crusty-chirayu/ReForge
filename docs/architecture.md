@@ -22,4 +22,8 @@ Project X-Ray supports TypeScript, JavaScript, and JSON today. Other language an
 
 Health score is `100 - min(100, sum(severityWeight * confidenceWeight))`, using severity weights Critical 10, High 7, Medium 4, Low 2, and Info 1. Confidence weights are High 1, Medium 0.65, and Low 0.35. This is a prioritization heuristic, not a measure of software quality. Current Doctor analysis is static only; it does not perform runtime profiling or vulnerability-advisory lookup.
 
+## Project Brain
+
+Project Brain is a stateless, provider-agnostic layer over deterministic reports. `ContextBuilder` selects compact project facts, relevant modules, Doctor findings, and known evidence under a fixed budget. Providers receive a strict system contract; their output is returned as explicitly unverified inference. Evidence citations are retained only when they exactly match supplied evidence. No source dump, API key logging, persistence, embeddings, or RAG infrastructure is used.
+
 The `/v1/analyze/local` endpoint is provided for local development and is disabled unless `REFORGE_ENABLE_LOCAL_INGESTION=true`; this prevents a deployed service from reading arbitrary host paths by default.

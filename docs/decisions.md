@@ -34,4 +34,8 @@ The current milestone is stateless and has no unnecessary persistence layer. Sto
 
 ## AI remains modular
 
-No LLM, RAG, or AI-generated facts are implemented. Any future AI component must consume the established model and preserve the static-fact/evidence boundary.
+Project Brain exposes only a provider abstraction; no provider SDK, RAG, or AI-generated facts are embedded in deterministic reports. Any future AI component must preserve the static-fact/evidence boundary.
+
+## Project Brain provider boundary
+
+Project Brain depends only on an internal `LLMProvider` interface, not a provider SDK. It is stateless: callers supply the deterministic report with each question. AI output is marked inference, context is budgeted, and provider citations are accepted only when they match known evidence.

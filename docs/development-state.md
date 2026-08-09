@@ -2,7 +2,7 @@
 
 ## Current phase
 
-**Phase 3 - Project Doctor**
+**Phase 4 - Project Brain**
 
 ## Completed
 
@@ -13,6 +13,7 @@
 - TypeScript/JavaScript code structure analysis, imports/exports, symbols, dependencies, and module relationships
 - Basic API discovery, database/authentication detection, file classification, and project metrics
 - Deterministic Project Doctor findings, severity/confidence summaries, remediation, and heuristic health scoring
+- Provider-agnostic Project Brain context construction, inference separation, evidence validation, and bounded context
 
 ## Current capabilities
 
@@ -28,7 +29,7 @@ ReForge accepts a bounded project input and returns a versioned JSON report. The
 
 ## Next milestone
 
-**Phase 4 - Project Brain**: build durable project understanding and retrieval over verified static and diagnostic facts without replacing the evidence boundary.
+**Phase 5 - Planning Department**: create evidence-grounded, prioritized plans from verified facts, Doctor findings, and Brain output.
 
 ## Future sequence
 
