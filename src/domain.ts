@@ -39,7 +39,8 @@ export type NoveltyCategory = "PRODUCT" | "FEATURE" | "UX" | "ARCHITECTURE" | "A
 export type NoveltyStrategy = "COMBINATION" | "GAP" | "TRANSFORMATION" | "ARCHITECTURAL" | "AI_AUGMENTATION" | "AUTOMATION";
 export interface NoveltyRequest { goal?: string; report: AnalysisReport; }
 export interface NoveltyCandidate { id: string; title: string; description: string; category: NoveltyCategory; strategy: NoveltyStrategy; noveltyScore: number; valueScore: number; feasibilityScore: number; fitScore: number; riskScore: number; confidence: "HIGH" | "MEDIUM" | "LOW"; source: "DETERMINISTIC" | "AI_RECOMMENDATION"; evidence: Evidence[]; affectedModules: string[]; prerequisites: string[]; tradeoffs: string[]; implementationDirection: string; assumptions: string[]; }
-export interface NoveltyAnalysis { heuristic: "differentiation + fit + value + feasibility - risk"; candidates: NoveltyCandidate[]; limitations: string[]; }
+export interface NoveltyCapability { name: string; evidence: Evidence[]; existing: true; }
+export interface NoveltyAnalysis { heuristic: "differentiation + fit + value + feasibility - risk"; capabilities: NoveltyCapability[]; candidates: NoveltyCandidate[]; limitations: string[]; }
 
 export interface ScanResult {
   root: string;
