@@ -71,7 +71,7 @@ export async function extractZipSafely(archive: string, destination: string): Pr
 export function validateGitHubUrl(value: string): URL {
   let url: URL;
   try { url = new URL(value); } catch { throw new Error("repositoryUrl must be a valid HTTPS GitHub URL."); }
-  if (url.protocol !== "https:" || url.hostname !== "github.com" || !url.pathname.match(/^\/[^/]+\/[^/]+\/?(?:\.git)?$/)) throw new Error("Only HTTPS GitHub repository URLs are currently accepted.");
+  if (url.protocol !== "https:" || url.hostname !== "github.com" || !url.pathname.match(/^\/[^/]+\/[^/]+(?:\.git)?\/?$/)) throw new Error("Only HTTPS GitHub repository URLs are currently accepted.");
   return url;
 }
 

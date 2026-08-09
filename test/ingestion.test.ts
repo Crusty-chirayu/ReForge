@@ -57,6 +57,6 @@ test("accepts an empty project and rejects malformed GitHub URLs", async () => {
     const report = await new AnalysisEngine().analyze(project, { kind: "archive" });
     assert.equal(report.overview.fileCount, 0);
     assert.doesNotThrow(() => validateGitHubUrl("https://github.com/openai/openai-node.git"));
-    for (const value of ["not-a-url", "http://github.com/openai/openai-node", "https://example.com/a/b", "https://github.com/openai"]) assert.throws(() => validateGitHubUrl(value));
+    for (const value of ["not-a-url", "http://github.com/openai/openai-node", "https://example.com/a/b", "https://github.com/openai", "https://github.com/openai/openai-node/.git"]) assert.throws(() => validateGitHubUrl(value));
   } finally { await rm(root, { recursive: true, force: true }); }
 });

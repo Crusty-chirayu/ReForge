@@ -39,3 +39,12 @@ test("does not analyze ignored generated and repository directories", async () =
     assert.ok(report.structure.ignoredDirectories.includes(".cache"));
   } finally { await rm(root, { recursive: true, force: true }); }
 });
+
+test("reports malformed package manifests as an evidence-backed observation", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "reforge-test-"));
+  try {
+    await writeFile(path.join(root, "package.json"), "{ not valid JSON");
+    const report = await new AnalysisEngine().analyze(root, { kind: "local" });
+    assert.ok(report.codeQualityObservations.some((item) => item.name === "Malformed package manifest" && item.evidence[0]?.file === "package.json"));
+  } finally { await rm(root, { recursive: true, force: true }); }
+});

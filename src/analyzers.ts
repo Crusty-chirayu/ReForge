@@ -52,7 +52,11 @@ export const provenanceAndRiskAnalyzer: Analyzer = { name: "provenance-and-risks
   if (secrets.length) risks.push(finding("Potential hard-coded secret", secrets, "low"));
   const todos = matching(scan, /\b(TODO|FIXME|HACK)\b/);
   if (todos.length) risks.push(finding("Unresolved code markers", todos, "low"));
-  const quality = scan.skippedFiles ? [finding("Some files were not text-analyzed", [{ file: "(scan)", detail: `${scan.skippedFiles} file(s) skipped due to limits or decoding` }], "high")] : [];
+  const quality: Finding[] = [];
+  if (scan.skippedFiles) quality.push(finding("Some files were not text-analyzed", [{ file: "(scan)", detail: `${scan.skippedFiles} file(s) skipped due to limits or decoding` }], "high"));
+  for (const file of scan.files.filter((item) => item.relativePath === "package.json" && item.text)) {
+    try { JSON.parse(file.text!); } catch { quality.push(finding("Malformed package manifest", [{ file: file.relativePath, detail: "package.json could not be parsed as JSON" }], "high")); }
+  }
   return { provenance: { source: { kind: "local" }, licenses, copyrightNotices }, risks, codeQualityObservations: quality };
 }};
 
