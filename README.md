@@ -4,7 +4,7 @@ ReForge AI is an evidence-first software project analysis platform. It ingests a
 
 ## Current phase
 
-**Phase 2 - Project X-Ray** is complete. ReForge can turn supported project files into a structured `projectModel` that future analysis and planning capabilities can consume.
+**Phase 3 - Project Doctor** is complete. ReForge adds deterministic, evidence-backed diagnostics on top of Project X-Ray facts.
 
 ## Current capabilities
 
@@ -15,12 +15,15 @@ ReForge AI is an evidence-first software project analysis platform. It ingests a
 - Build a Project X-Ray model for TypeScript, JavaScript, and JSON: classified files, line/file metrics, AST-derived modules and symbols, imports/exports, resolved internal relationships, external imports, and production/development/peer dependencies.
 - Detect common Fastify/Express-style route calls with literal paths, plus supported database and authentication technologies when project evidence exists.
 - Preserve provenance and return evidence for important findings. Environment files are reported only as metadata; their values are never returned.
+- Produce Project Doctor findings for selected large-file/module, duplicate-import, coupling/cycle, missing-test, dependency-count, and hardcoded-secret indicators, with remediation and a heuristic health score.
 
 ## Architecture
 
 `HTTP API -> ingestion -> isolated workspace -> scanner -> modular analyzers -> versioned report`
 
 `AnalysisEngine` orchestrates analyzers over a shared scan result. The Project X-Ray analyzer uses the TypeScript compiler API for TypeScript and JavaScript AST analysis. Static facts remain separate from any future AI inference.
+
+Project Doctor consumes `projectModel` rather than rescanning projects. Its health score is `100 - min(100, sum(severityWeight * confidenceWeight))`; it is a prioritization heuristic, not an objective quality measurement.
 
 See [architecture documentation](docs/architecture.md) and [architectural decisions](docs/decisions.md).
 
@@ -73,6 +76,7 @@ Invoke-RestMethod -Method Post http://127.0.0.1:3000/v1/analyze/repository -Cont
 - Module resolution does not yet implement TypeScript path aliases, package export maps, or monorepo workspaces.
 - No UI, database, job queue, authentication, private-repository connector, security scanner, performance analyzer, LLM/RAG, or code generation exists yet.
 - Git cloning should run in an isolated worker before the service is exposed to untrusted production workloads.
+- Doctor is static analysis only: it does not perform runtime profiling, test coverage measurement, or vulnerability-advisory lookup.
 
 ## Roadmap
 

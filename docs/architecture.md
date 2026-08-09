@@ -16,4 +16,10 @@ Reports include a schema version and evidence objects. Future AI output should b
 
 Project X-Ray supports TypeScript, JavaScript, and JSON today. Other language analyzers can implement the same `Analyzer` interface without changing ingestion, scanning, or HTTP transport.
 
+## Project Doctor
+
+`runProjectDoctor` is a model-aware second pass called by `AnalysisEngine` after Project X-Ray. It consumes the existing project model and inherited evidence-backed risks; it does not rescan files. Doctor findings contain a rule ID, category, severity, confidence, evidence, affected files/modules, impact, and remediation.
+
+Health score is `100 - min(100, sum(severityWeight * confidenceWeight))`, using severity weights Critical 10, High 7, Medium 4, Low 2, and Info 1. Confidence weights are High 1, Medium 0.65, and Low 0.35. This is a prioritization heuristic, not a measure of software quality. Current Doctor analysis is static only; it does not perform runtime profiling or vulnerability-advisory lookup.
+
 The `/v1/analyze/local` endpoint is provided for local development and is disabled unless `REFORGE_ENABLE_LOCAL_INGESTION=true`; this prevents a deployed service from reading arbitrary host paths by default.

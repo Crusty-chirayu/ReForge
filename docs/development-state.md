@@ -2,7 +2,7 @@
 
 ## Current phase
 
-**Phase 2 - Project X-Ray**
+**Phase 3 - Project Doctor**
 
 ## Completed
 
@@ -12,6 +12,7 @@
 - Phase 2 Project X-Ray structured project model
 - TypeScript/JavaScript code structure analysis, imports/exports, symbols, dependencies, and module relationships
 - Basic API discovery, database/authentication detection, file classification, and project metrics
+- Deterministic Project Doctor findings, severity/confidence summaries, remediation, and heuristic health scoring
 
 ## Current capabilities
 
@@ -27,7 +28,7 @@ ReForge accepts a bounded project input and returns a versioned JSON report. The
 
 ## Next milestone
 
-**Phase 3 - Project Doctor**: evidence-based code-quality, security, testing, dependency-health, and project-risk analysis. It must build on the current Project X-Ray model rather than replace it.
+**Phase 4 - Project Brain**: build durable project understanding and retrieval over verified static and diagnostic facts without replacing the evidence boundary.
 
 ## Future sequence
 
