@@ -27,3 +27,12 @@ test("does not create testing or secret findings without evidence", () => {
   const doctor = runProjectDoctor(safe);
   assert.ok(!doctor.findings.some((item) => item.ruleId === "TEST-001" || item.ruleId === "TEST-002" || item.ruleId === "SEC-001"));
 });
+
+test("detects high fan-in and high fan-out from the existing relationship graph", () => {
+  const hub = "src/hub.ts";
+  const modules = ["a", "b", "c"].map((name) => ({ id: `src/${name}.ts`, imports: [{ specifier: "./hub", kind: "internal" as const, target: hub, symbols: [], evidence: { file: `src/${name}.ts`, detail: `imports ${hub}` } }], exports: [], symbols: [], relationships: [hub] }));
+  modules.push({ id: hub, imports: ["one", "two", "three", "four", "five"].map((name) => ({ specifier: `./${name}`, kind: "internal" as const, target: `src/${name}.ts`, symbols: [], evidence: { file: hub, detail: `imports src/${name}.ts` } })), exports: [], symbols: [], relationships: ["src/one.ts", "src/two.ts", "src/three.ts", "src/four.ts", "src/five.ts"] });
+  const doctor = runProjectDoctor({ ...model, modules });
+  assert.ok(doctor.findings.some((item) => item.ruleId === "ARCH-001"));
+  assert.ok(doctor.findings.some((item) => item.ruleId === "ARCH-002"));
+});
