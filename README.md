@@ -4,7 +4,7 @@ ReForge AI is an evidence-first software project analysis platform. It ingests a
 
 ## Current phase
 
-**Phase 5 - Planning Department** is complete. ReForge can turn deterministic Doctor findings into validated, dependency-aware engineering plans.
+**Phase 9B - Trusted Isolated Patch Application** is complete. ReForge provides trusted ZIP ingestion, server-controlled snapshotting, pre-mutation re-hashing, atomic isolated patch application (CREATE, MODIFY, RENAME, DELETE with approval), execution receipts, diff summaries, and automatic workspace disposal.
 
 ## Current capabilities
 
@@ -18,6 +18,7 @@ ReForge AI is an evidence-first software project analysis platform. It ingests a
 - Produce Project Doctor findings for selected large-file/module, duplicate-import, coupling/cycle, missing-test, dependency-count, and hardcoded-secret indicators, with remediation and a heuristic health score.
 - Provide a provider-agnostic, stateless Project Brain query foundation. AI output is explicitly marked inference and cannot replace deterministic facts.
 - Generate deterministic plans with priorities, dependencies, affected modules, risks, acceptance criteria, and verification guidance at `POST /v1/plan`.
+- Ingest a trusted ZIP at `POST /v1/execute`, generate a server-controlled snapshot, re-hash files, apply approved patches inside a disposable workspace, return an `ExecutionReceipt`, and dispose of the workspace cleanly.
 
 ## Architecture
 
@@ -53,6 +54,7 @@ node .\node_modules\tsx\dist\cli.mjs --test test\*.test.ts
 | POST | `/v1/analyze/archive` | Analyze a multipart ZIP field named `archive` |
 | POST | `/v1/analyze/repository` | Analyze a public HTTPS GitHub repository URL |
 | POST | `/v1/snapshot` | Safely ingest a ZIP and return a compact execution snapshot |
+| POST | `/v1/execute` | Ingest trusted ZIP, apply approved patches inside disposable workspace, and return execution receipt |
 | POST | `/v1/execute/validate` | Validate snapshot-bound patches without applying them |
 | POST | `/v1/analyze/local` | Development-only local analysis; requires `REFORGE_ENABLE_LOCAL_INGESTION=true` |
 

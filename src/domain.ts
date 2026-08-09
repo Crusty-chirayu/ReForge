@@ -64,12 +64,46 @@ export interface PatchOperation {
   evidence: Evidence[];
   provenance: AnalysisReport["provenance"];
 }
-export interface PatchValidationError { code: "APPROVAL_REQUIRED" | "SNAPSHOT_REQUIRED" | "SNAPSHOT_MISMATCH" | "UNSAFE_PATH" | "MISSING_CONTENT" | "MISSING_EXPECTED_HASH" | "STALE_PLAN" | "UNKNOWN_BUILD_TASK" | "INVALID_PROVENANCE" | "INVALID_OPERATION" | "DELETE_APPROVAL_REQUIRED"; path?: string; message: string; }
+export interface PatchValidationError { code: "APPROVAL_REQUIRED" | "SNAPSHOT_REQUIRED" | "SNAPSHOT_MISMATCH" | "UNSAFE_PATH" | "MISSING_CONTENT" | "MISSING_EXPECTED_HASH" | "STALE_PLAN" | "UNKNOWN_BUILD_TASK" | "INVALID_PROVENANCE" | "INVALID_OPERATION" | "DELETE_APPROVAL_REQUIRED" | "NOT_EXECUTABLE" | "RENAME_COLLISION" | "SOURCE_NOT_FOUND" | "CLEANUP_FAILED"; path?: string; message: string; }
 export interface BuildRequest { goal: string; report: AnalysisReport; snapshot?: ProjectSnapshot; impact?: ChangeImpactReport; noveltyCandidate?: NoveltyCandidate; plan?: Plan; constraints?: string[]; }
 export interface BuildPlan { objective: string; provenance: AnalysisReport["provenance"]; sourceSnapshotId?: string; buildTaskIds?: string[]; fileChanges: { path: string; operation: FileOperation; status: "EXISTING_FILE" | "PROPOSED_NEW_FILE"; expectedHash?: string; reason: string; evidence: Evidence[] }[]; dependencyChanges: { operation: "ADD" | "REMOVE" | "REPLACE"; name: string; reason: string; evidence: Evidence[] }[]; testChanges: string[]; risks: string[]; validation: { valid: boolean; errors: string[] }; assumptions: string[]; }
 export type ExecutionStatus = "PENDING" | "APPROVED" | "RUNNING" | "VERIFYING" | "SUCCEEDED" | "FAILED" | "ROLLED_BACK" | "CANCELLED";
 export interface ExecutionRequest { snapshotId?: string; snapshot?: ProjectSnapshot; build: BuildPlan; patches?: PatchOperation[]; approved: boolean; allowDelete?: boolean; }
-export interface ExecutionResult { status: ExecutionStatus; changes: { path: string; operation: FileOperation; applied: false; reason: string; evidence: Evidence[] }[]; validation: { valid: boolean; errors: string[]; details?: PatchValidationError[] }; provenance: AnalysisReport["provenance"]; rollback: { attempted: false; succeeded: false }; limitations: string[]; }
+export interface OperationReceipt {
+  path: string;
+  operation: FileOperation;
+  applied: boolean;
+  result?: "SUCCESS" | "FAILED" | "SKIPPED";
+  error?: string;
+  fromPath?: string;
+  expectedExistingHash?: string;
+  originatingTaskId?: string;
+}
+export interface DiffSummary {
+  created: string[];
+  modified: string[];
+  renamed: { from: string; to: string }[];
+  deleted: string[];
+  unchanged: string[];
+  failed: string[];
+}
+export interface ExecutionReceipt {
+  executionId: string;
+  snapshotId: string;
+  status: ExecutionStatus;
+  approved: boolean;
+  operations: PatchOperation[];
+  appliedOperations: OperationReceipt[];
+  failedOperation?: OperationReceipt;
+  workspaceCleanupStatus: "SUCCESS" | "FAILED";
+  provenance: AnalysisReport["provenance"];
+  buildTaskIds?: string[];
+  diffSummary: DiffSummary;
+  rollback: { attempted: boolean; succeeded: boolean };
+  createdAt: string;
+  completedAt: string;
+}
+export interface ExecutionResult { status: ExecutionStatus; changes: { path: string; operation: FileOperation; applied: boolean; reason: string; evidence: Evidence[] }[]; validation: { valid: boolean; errors: string[]; details?: PatchValidationError[] }; provenance: AnalysisReport["provenance"]; rollback: { attempted: boolean; succeeded: boolean }; receipt?: ExecutionReceipt; limitations: string[]; }
 
 export interface ScanResult {
   root: string;
