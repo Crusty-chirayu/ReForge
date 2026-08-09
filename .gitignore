@@ -1,0 +1,10 @@
+node_modules/
+.pnpm-store/
+dist/
+.reforge/
+coverage/
+*.log
+
+.env
+.env.*
+!.env.example
