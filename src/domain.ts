@@ -31,6 +31,10 @@ export interface DoctorFinding { ruleId: string; category: DoctorCategory; sever
 export interface DoctorReport { healthScore: number; summary: { findingCount: number; bySeverity: Record<DoctorSeverity, number>; byCategory: Partial<Record<DoctorCategory, number>>; scoring: "100 - min(100, sum(severityWeight * confidenceWeight))" }; findings: DoctorFinding[]; }
 export interface BrainInference { statement: string; confidence: "HIGH" | "MEDIUM" | "LOW"; verified: false; }
 export interface BrainResponse { answer: string; confidence: "HIGH" | "MEDIUM" | "LOW"; inferences: BrainInference[]; evidence: Evidence[]; limitations: string[]; contextUsed: string[]; contextTruncated: boolean; }
+export interface PlanningRequest { goal: string; constraints?: string[]; priorities?: string[]; desiredTechnology?: string; }
+export interface PlanTask { id: string; title: string; objective: string; priority: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW"; dependencies: string[]; affectedModules: string[]; evidence: Evidence[]; acceptanceCriteria: string[]; verification: string[]; }
+export interface PlanRisk { title: string; probability: "LOW" | "MEDIUM" | "HIGH"; impact: "LOW" | "MEDIUM" | "HIGH"; mitigation: string; evidence: Evidence[]; }
+export interface Plan { objective: string; assumptions: string[]; tasks: PlanTask[]; orderedTaskIds: string[]; risks: PlanRisk[]; unresolvedQuestions: string[]; validation: { valid: boolean; errors: string[]; priorityFormula: "severityWeight + confidenceWeight - effortWeight" }; }
 
 export interface ScanResult {
   root: string;

@@ -5,10 +5,12 @@ import { z } from "zod";
 import { AnalysisEngine } from "./engine.js";
 import { cloneRepository, createWorkspace, extractZipSafely, saveUpload } from "./ingestion.js";
 import { ProjectBrain } from "./brain.js";
+import { PlanningDepartment } from "./planning.js";
 
 const app = Fastify({ logger: true, bodyLimit: 200 * 1024 * 1024 });
 const engine = new AnalysisEngine();
 const brain = new ProjectBrain();
+const planner = new PlanningDepartment();
 await app.register(multipart, { limits: { files: 1, fileSize: 200 * 1024 * 1024 } });
 
 app.get("/health", async () => ({ status: "ok", service: "reforge-analysis-engine" }));
@@ -19,6 +21,7 @@ app.post("/v1/brain/query", async (request, reply) => {
   try { return await brain.query(body.data.report, body.data.question); }
   catch (error) { const message = error instanceof Error ? error.message : "Project Brain failed"; return reply.code(message.includes("not configured") ? 503 : 400).send({ error: message }); }
 });
+app.post("/v1/plan", async (request, reply) => { const body = z.object({ goal: z.string().min(1).max(4_000), report: z.any(), constraints: z.array(z.string()).optional(), priorities: z.array(z.string()).optional(), desiredTechnology: z.string().optional() }).safeParse(request.body); if (!body.success) return reply.code(400).send({ error: "Invalid planning request: goal and deterministic report are required." }); try { return { plan: planner.generate(body.data.report, body.data) }; } catch (error) { return reply.code(400).send({ error: error instanceof Error ? error.message : "Planning failed" }); } });
 
 app.post("/v1/analyze/repository", async (request, reply) => {
   const body = z.object({ repositoryUrl: z.string().max(2_048) }).safeParse(request.body);

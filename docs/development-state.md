@@ -2,7 +2,7 @@
 
 ## Current phase
 
-**Phase 4 - Project Brain**
+**Phase 5 - Planning Department**
 
 ## Completed
 
@@ -14,6 +14,7 @@
 - Basic API discovery, database/authentication detection, file classification, and project metrics
 - Deterministic Project Doctor findings, severity/confidence summaries, remediation, and heuristic health scoring
 - Provider-agnostic Project Brain context construction, inference separation, evidence validation, and bounded context
+- Deterministic evidence-backed engineering plans with task ordering, validation, risks, criteria, and verification guidance
 
 ## Current capabilities
 
@@ -29,7 +30,7 @@ ReForge accepts a bounded project input and returns a versioned JSON report. The
 
 ## Next milestone
 
-**Phase 5 - Planning Department**: create evidence-grounded, prioritized plans from verified facts, Doctor findings, and Brain output.
+**Phase 6 - Novelty Engine**: identify evidence-grounded product and technical opportunities without replacing deterministic analysis.
 
 ## Future sequence
 

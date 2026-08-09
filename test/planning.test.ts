@@ -1,0 +1,8 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { orderTasks, PlanningDepartment, validatePlan } from "../src/planning.js";
+import type { AnalysisReport, DoctorFinding } from "../src/domain.js";
+const finding = (ruleId: string, category: DoctorFinding["category"], severity: DoctorFinding["severity"]): DoctorFinding => ({ ruleId, category, severity, confidence: "HIGH", title: ruleId === "SEC-001" ? "Potential hardcoded secret" : "No test files detected", description: "finding", impact: "impact", remediation: "Fix it safely.", evidence: [{ file: "src/a.ts", detail: "evidence" }], affectedModules: ["src/a.ts"] });
+const report = { projectModel: { modules: [{ id: "src/a.ts" }] }, doctor: { findings: [finding("SEC-001", "SECURITY", "HIGH"), finding("TEST-001", "TESTING", "MEDIUM")] } } as unknown as AnalysisReport;
+test("creates deterministic prioritized, dependency-aware tasks", () => { const plan = new PlanningDepartment().generate(report, { goal: "Improve security" }); assert.equal(plan.tasks.length, 2); assert.equal(plan.tasks[0]?.priority, "HIGH"); assert.ok(plan.orderedTaskIds.length === 2); assert.ok(plan.tasks.every((task) => task.acceptanceCriteria.length && task.verification.length && task.evidence.length)); assert.ok(plan.risks.length === 1); });
+test("detects task dependency cycles and invalid affected modules", () => { const tasks = [{ id: "a", dependencies: ["b"] }, { id: "b", dependencies: ["a"] }] as any; assert.ok(orderTasks(tasks).cycle); const plan = new PlanningDepartment().generate(report, { goal: "x" }); plan.tasks[0]!.affectedModules = ["missing.ts"]; assert.ok(validatePlan(plan, report).some((error) => error.includes("Unknown affected module"))); });

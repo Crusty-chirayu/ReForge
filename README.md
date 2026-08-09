@@ -4,7 +4,7 @@ ReForge AI is an evidence-first software project analysis platform. It ingests a
 
 ## Current phase
 
-**Phase 4 - Project Brain** is complete. ReForge can form bounded, evidence-aware LLM context from deterministic X-Ray and Doctor results.
+**Phase 5 - Planning Department** is complete. ReForge can turn deterministic Doctor findings into validated, dependency-aware engineering plans.
 
 ## Current capabilities
 
@@ -17,6 +17,7 @@ ReForge AI is an evidence-first software project analysis platform. It ingests a
 - Preserve provenance and return evidence for important findings. Environment files are reported only as metadata; their values are never returned.
 - Produce Project Doctor findings for selected large-file/module, duplicate-import, coupling/cycle, missing-test, dependency-count, and hardcoded-secret indicators, with remediation and a heuristic health score.
 - Provide a provider-agnostic, stateless Project Brain query foundation. AI output is explicitly marked inference and cannot replace deterministic facts.
+- Generate deterministic plans with priorities, dependencies, affected modules, risks, acceptance criteria, and verification guidance at `POST /v1/plan`.
 
 ## Architecture
 

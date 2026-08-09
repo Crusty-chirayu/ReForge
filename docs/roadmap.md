@@ -18,7 +18,7 @@ Objective: build evidence-aware LLM reasoning over verified static and diagnosti
 
 ## Phase 5 - Planning Department
 
-Objective: turn verified findings into prioritized, dependency-aware improvement plans. It depends on project understanding and diagnosis to avoid unsupported recommendations.
+Objective: turn verified findings into prioritized, dependency-aware improvement plans. Major capabilities: deterministic task generation, explicit dependencies, risks, acceptance criteria, and plan validation. It depends on project understanding and diagnosis to avoid unsupported recommendations.
 
 ## Phase 6 - Novelty Engine
 

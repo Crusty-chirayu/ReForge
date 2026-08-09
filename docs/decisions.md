@@ -39,3 +39,7 @@ Project Brain exposes only a provider abstraction; no provider SDK, RAG, or AI-g
 ## Project Brain provider boundary
 
 Project Brain depends only on an internal `LLMProvider` interface, not a provider SDK. It is stateless: callers supply the deterministic report with each question. AI output is marked inference, context is budgeted, and provider citations are accepted only when they match known evidence.
+
+## Deterministic planning first
+
+Planning consumes `AnalysisReport` and Doctor evidence directly. It does not require an LLM, does not mutate code, validates task references, and reports dependency cycles rather than hiding them.
