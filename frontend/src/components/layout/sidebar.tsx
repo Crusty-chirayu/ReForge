@@ -50,7 +50,7 @@ const navSections: NavSection[] = [
       { label: "Impact", href: "/impact", icon: Activity },
       { label: "Build", href: "/build", icon: Wrench },
       { label: "Pipeline", href: "/pipeline/new", icon: Zap },
-      { label: "Snapshots", href: "/snapshots", icon: FolderArchive, soon: true },
+      { label: "Snapshots", href: "/snapshots", icon: FolderArchive },
     ],
   },
 ];
