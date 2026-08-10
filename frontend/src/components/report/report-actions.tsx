@@ -1,7 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Activity, ChevronRight, Sparkles, Target, Zap } from "lucide-react";
+import {
+  Activity,
+  Brain,
+  ChevronRight,
+  Sparkles,
+  Target,
+  Zap,
+} from "lucide-react";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SectionTitle } from "./sections";
@@ -26,6 +33,12 @@ const ACTIONS = [
     comingSoon: false,
   },
   {
+    label: "Ask Project Brain",
+    icon: Brain,
+    route: "/brain",
+    comingSoon: false,
+  },
+  {
     label: "Run Pipeline",
     icon: Zap,
     route: "/pipeline/new",
@@ -34,8 +47,8 @@ const ACTIONS = [
 ] as const;
 
 /**
- * Next-step workflow actions. Plan / Novelty / Impact / Pipeline are live
- * workflows; Snapshots detail arrives in a later phase.
+ * Next-step workflow actions. Plan / Novelty / Impact / Brain / Pipeline are
+ * live workflows; Snapshots detail lands in a later phase.
  */
 export function ReportActions() {
   const router = useRouter();
@@ -48,7 +61,7 @@ export function ReportActions() {
           title="Intelligence Workflows"
           subtitle="Your report is preserved in memory and is reused by each workflow automatically"
         />
-        <div className="grid gap-3 px-4 pb-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 px-4 pb-4 sm:grid-cols-2 lg:grid-cols-3">
           {ACTIONS.map((action) => (
             <Button
               key={action.route}

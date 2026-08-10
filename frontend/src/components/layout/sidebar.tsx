@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import type { ComponentType, SVGProps } from "react";
 import {
   Activity,
+  Brain,
   ChevronRight,
   FolderArchive,
   LayoutDashboard,
@@ -45,6 +46,7 @@ const navSections: NavSection[] = [
     title: "WORKBENCH",
     items: [
       { label: "Analyze", href: "/analyze", icon: Search },
+      { label: "Brain", href: "/brain", icon: Brain },
       { label: "Plan", href: "/plan", icon: Target },
       { label: "Novelty", href: "/novelty", icon: Sparkles },
       { label: "Impact", href: "/impact", icon: Activity },

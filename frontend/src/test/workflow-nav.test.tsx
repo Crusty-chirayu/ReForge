@@ -82,6 +82,13 @@ describe("Workflow navigation", () => {
     expect(pushMock).toHaveBeenCalledWith("/pipeline/new");
   });
 
+  it("navigates from the report to Project Brain", () => {
+    reportState.value = mockAnalysisReport;
+    render(<AnalysisReportPage />);
+    fireEvent.click(screen.getByRole("button", { name: /Ask Project Brain/ }));
+    expect(pushMock).toHaveBeenCalledWith("/brain");
+  });
+
   it("navigates back to the report from a workflow page", () => {
     reportState.value = mockAnalysisReport;
     render(<PlanPage />);
