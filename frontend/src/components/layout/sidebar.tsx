@@ -5,16 +5,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType, SVGProps } from "react";
 import {
-  Activity,
-  Brain,
   ChevronRight,
   FolderArchive,
-  History,
   LayoutDashboard,
   Search,
   Server,
   Sparkles,
-  Target,
   Zap,
 } from "lucide-react";
 import { useHealth } from "@/lib/query/use-health";
@@ -33,27 +29,22 @@ interface NavSection {
   items: NavItem[];
 }
 
+/**
+ * Console navigation — only links to routes that exist. Items for upcoming
+ * phases render as disabled "planned" entries until their pages land.
+ */
 const navSections: NavSection[] = [
   {
     title: "SYSTEM",
     items: [{ label: "Dashboard", href: "/", icon: LayoutDashboard }],
   },
   {
-    title: "INTELLIGENCE",
+    title: "WORKBENCH",
     items: [
       { label: "Analyze", href: "/analyze", icon: Search, soon: true },
-      { label: "Brain", href: "/brain", icon: Brain, soon: true },
-      { label: "Plan", href: "/plan", icon: Target, soon: true },
-      { label: "Impact", href: "/impact", icon: Activity, soon: true },
-      { label: "Novelty", href: "/novelty", icon: Sparkles, soon: true },
-    ],
-  },
-  {
-    title: "HISTORY",
-    items: [
       { label: "Pipeline", href: "/pipeline", icon: Zap, soon: true },
       { label: "Snapshots", href: "/snapshots", icon: FolderArchive, soon: true },
-      { label: "Project History", href: "/project-history", icon: History, soon: true },
+      { label: "Novelty", href: "/novelty", icon: Sparkles, soon: true },
     ],
   },
 ];
@@ -69,7 +60,7 @@ function LogoMark() {
 export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-  const { data: health, isLoading, isError } = useHealth();
+  const { data: health, isLoading } = useHealth();
 
   const isHealthy = health?.status === "ok";
   const statusLabel = isLoading ? "CHECKING" : isHealthy ? "LIVE" : "OFFLINE";
@@ -115,22 +106,14 @@ export function Sidebar() {
               Backend&nbsp;{statusLabel}
             </span>
           )}
-          {collapsed && (
-            <span
-              aria-hidden="true"
-              className="sr-only"
-            >
-              Backend {statusLabel}
-            </span>
-          )}
         </div>
         {!collapsed && (
           <p className="mt-1.5 truncate font-mono text-[10px] text-ink-subtle">
             {isHealthy
               ? health?.service ?? "reforge-analysis-engine"
-              : isError
-                ? "unreachable"
-                : "connecting…"}
+              : isLoading
+                ? "connecting…"
+                : "unreachable"}
           </p>
         )}
       </div>
@@ -167,7 +150,7 @@ export function Sidebar() {
                           <span className="truncate">{item.label}</span>
                           {item.soon && (
                             <span className="ml-auto shrink-0 rounded border border-ink-border/40 px-1 py-px font-mono text-[8px] uppercase tracking-wider text-ink-subtle">
-                              soon
+                              planned
                             </span>
                           )}
                           {isActive && (
@@ -193,7 +176,7 @@ export function Sidebar() {
 
                   return (
                     <li key={item.label}>
-                      {item.href ? (
+                      {item.href && !item.soon ? (
                         <Link
                           href={item.href}
                           className={linkClass}
@@ -204,8 +187,12 @@ export function Sidebar() {
                       ) : (
                         <span
                           className={linkClass}
-                          title={collapsed ? `${item.label} (planned)` : undefined}
                           aria-disabled="true"
+                          title={
+                            collapsed
+                              ? `${item.label} (planned)`
+                              : `${item.label} — available in a later phase`
+                          }
                         >
                           {inner}
                         </span>

@@ -6,6 +6,10 @@ import HomePage from "@/app/page";
 const fetchMock = vi.fn();
 globalThis.fetch = fetchMock as unknown as typeof fetch;
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
+
 function renderHome() {
   const client = new QueryClient({
     defaultOptions: {
