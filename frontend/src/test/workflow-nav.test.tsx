@@ -75,13 +75,11 @@ describe("Workflow navigation", () => {
     expect(pushMock).toHaveBeenCalledWith("/impact");
   });
 
-  it("keeps Run Pipeline marked coming-next and disabled", () => {
+  it("navigates from the report to the pipeline workflow", () => {
     reportState.value = mockAnalysisReport;
     render(<AnalysisReportPage />);
-    const pipeline = screen.getByRole("button", {
-      name: /Run Pipeline — coming next/,
-    });
-    expect(pipeline).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: /Run Pipeline/ }));
+    expect(pushMock).toHaveBeenCalledWith("/pipeline/new");
   });
 
   it("navigates back to the report from a workflow page", () => {
@@ -95,7 +93,7 @@ describe("Workflow navigation", () => {
     reportState.value = mockAnalysisReport;
     render(<PlanPage />);
     expect(
-      screen.getByRole("button", { name: /Next: Novelty/ }),
+      screen.getByRole("button", { name: /Next: Impact/ }),
     ).toBeInTheDocument();
   });
 });

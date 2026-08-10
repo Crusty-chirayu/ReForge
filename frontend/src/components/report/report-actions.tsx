@@ -28,15 +28,14 @@ const ACTIONS = [
   {
     label: "Run Pipeline",
     icon: Zap,
-    route: "/pipeline",
-    comingSoon: true,
+    route: "/pipeline/new",
+    comingSoon: false,
   },
 ] as const;
 
 /**
- * Next-step workflow actions. Plan / Novelty / Impact are live workflows in
- * F4; Run Pipeline ships in a later phase and stays clearly marked as
- * "coming next" (no placeholder pages are created).
+ * Next-step workflow actions. Plan / Novelty / Impact / Pipeline are live
+ * workflows; Snapshots detail arrives in a later phase.
  */
 export function ReportActions() {
   const router = useRouter();
@@ -50,37 +49,21 @@ export function ReportActions() {
           subtitle="Your report is preserved in memory and is reused by each workflow automatically"
         />
         <div className="grid gap-3 px-4 pb-4 sm:grid-cols-2 lg:grid-cols-4">
-          {ACTIONS.map((action) =>
-            action.comingSoon ? (
-              <Button
-                key={action.route}
-                variant="muted"
-                disabled
-                icon={<action.icon size={13} />}
-                className="w-full justify-start"
-                aria-label={`${action.label} — coming next`}
-              >
-                {action.label}
-                <span className="ml-auto rounded border border-ink-border/40 px-1 py-px font-mono text-[8px] uppercase tracking-wider text-ink-subtle">
-                  coming next
-                </span>
-              </Button>
-            ) : (
-              <Button
-                key={action.route}
-                variant="muted"
-                icon={<action.icon size={13} />}
-                iconRight={<ChevronRight size={12} />}
-                className="w-full justify-start hover:border-steel/30 hover:text-steel"
-                onClick={() => router.push(action.route)}
-              >
-                {action.label}
-              </Button>
-            ),
-          )}
+          {ACTIONS.map((action) => (
+            <Button
+              key={action.route}
+              variant="muted"
+              icon={<action.icon size={13} />}
+              iconRight={<ChevronRight size={12} />}
+              className="w-full justify-start hover:border-steel/30 hover:text-steel"
+              onClick={() => router.push(action.route)}
+            >
+              {action.label}
+            </Button>
+          ))}
         </div>
         <p className="px-4 pb-4 text-[10px] text-ink-subtle">
-          Run Pipeline lands in a later phase — no placeholder pages created.
+          Snapshots detail lands in a later phase.
         </p>
       </Card>
     </section>

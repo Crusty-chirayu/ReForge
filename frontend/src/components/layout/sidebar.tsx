@@ -13,6 +13,7 @@ import {
   Server,
   Sparkles,
   Target,
+  Wrench,
   Zap,
 } from "lucide-react";
 import { useHealth } from "@/lib/query/use-health";
@@ -47,7 +48,8 @@ const navSections: NavSection[] = [
       { label: "Plan", href: "/plan", icon: Target },
       { label: "Novelty", href: "/novelty", icon: Sparkles },
       { label: "Impact", href: "/impact", icon: Activity },
-      { label: "Pipeline", href: "/pipeline", icon: Zap, soon: true },
+      { label: "Build", href: "/build", icon: Wrench },
+      { label: "Pipeline", href: "/pipeline/new", icon: Zap },
       { label: "Snapshots", href: "/snapshots", icon: FolderArchive, soon: true },
     ],
   },

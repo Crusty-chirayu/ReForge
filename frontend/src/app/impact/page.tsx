@@ -20,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RequiresReport } from "@/components/workflow/requires-report";
 import { WorkflowHeader } from "@/components/workflow/workflow-header";
 import { analyzeImpact } from "@/lib/api";
+import { useWorkflow } from "@/lib/context/workflow-context";
 import { toError } from "@/lib/utils/workflow";
 import type {
   AnalysisReport,
@@ -62,6 +63,7 @@ const confidenceVariant: Record<
 };
 
 export default function ImpactPage() {
+  const { setImpact: saveImpact } = useWorkflow();
   const [request, setRequest] = useState("");
   const [category, setCategory] = useState<ChangeCategory | "">("");
   const [impact, setImpact] = useState<ChangeImpactReport | null>(null);
@@ -80,13 +82,14 @@ export default function ImpactPage() {
           category || undefined,
         );
         setImpact(res);
+        saveImpact(res);
       } catch (err) {
         setError(toError(err));
       } finally {
         setIsLoading(false);
       }
     },
-    [request, category],
+    [request, category, saveImpact],
   );
 
   const canSubmit = request.trim().length > 0 && !isLoading;
@@ -97,7 +100,7 @@ export default function ImpactPage() {
         <div className="space-y-6">
           <WorkflowHeader
             current="Impact"
-            next={{ label: "Run Pipeline — coming next", href: "/pipeline" }}
+            next={{ label: "Next: Build", href: "/build" }}
           />
 
           <div>

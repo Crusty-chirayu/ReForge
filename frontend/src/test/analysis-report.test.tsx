@@ -160,7 +160,7 @@ describe("Analysis report page", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders next-step actions — workflows enabled, pipeline coming-next", () => {
+  it("renders all next-step workflow actions enabled", () => {
     reportState.value = mockAnalysisReport;
     renderReport();
 
@@ -174,16 +174,14 @@ describe("Analysis report page", () => {
       name: /Explore Novelty/,
     });
     const pipelineButton = screen.getByRole("button", {
-      name: /Run Pipeline — coming next/,
+      name: /Run Pipeline/,
     });
 
-    // Plan / Impact / Novelty are live workflows in F4.
+    // All four workflows are live as of F5.
     expect(planButton).toBeEnabled();
     expect(impactButton).toBeEnabled();
     expect(noveltyButton).toBeEnabled();
-    // Run Pipeline ships later and stays clearly marked.
-    expect(pipelineButton).toBeDisabled();
-    expect(screen.getAllByText("coming next").length).toBeGreaterThanOrEqual(1);
+    expect(pipelineButton).toBeEnabled();
   });
 
   it("navigates back to the analyze page", () => {

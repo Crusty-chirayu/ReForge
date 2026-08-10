@@ -20,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RequiresReport } from "@/components/workflow/requires-report";
 import { WorkflowHeader } from "@/components/workflow/workflow-header";
 import { generatePlan } from "@/lib/api";
+import { useWorkflow } from "@/lib/context/workflow-context";
 import { splitList, toError } from "@/lib/utils/workflow";
 import type {
   AnalysisReport,
@@ -42,6 +43,7 @@ const riskVariant: Record<PlanRisk["probability" | "impact"], StatusVariant> = {
 };
 
 export default function PlanPage() {
+  const { setPlan: savePlan } = useWorkflow();
   const [goal, setGoal] = useState("");
   const [constraints, setConstraints] = useState("");
   const [priorities, setPriorities] = useState("");
@@ -62,13 +64,14 @@ export default function PlanPage() {
           desiredTechnology: desiredTechnology.trim() || undefined,
         });
         setPlan(res.plan);
+        savePlan(res.plan);
       } catch (err) {
         setError(toError(err));
       } finally {
         setIsLoading(false);
       }
     },
-    [goal, constraints, priorities, desiredTechnology],
+    [goal, constraints, priorities, desiredTechnology, savePlan],
   );
 
   const canGenerate = goal.trim().length > 0 && !isLoading;
@@ -79,7 +82,7 @@ export default function PlanPage() {
         <div className="space-y-6">
           <WorkflowHeader
             current="Plan"
-            next={{ label: "Next: Novelty", href: "/novelty" }}
+            next={{ label: "Next: Impact", href: "/impact" }}
           />
 
           <div>

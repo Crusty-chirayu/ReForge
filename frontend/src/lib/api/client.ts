@@ -256,11 +256,12 @@ export function validateExecution(
 export function runPipeline(
   archive: File,
   payload: PipelineRequest,
+  signal?: AbortSignal,
 ): Promise<PipelineResponse> {
   const form = new FormData();
   form.set("archive", archive);
   form.set("request", JSON.stringify(payload));
-  return multipart<PipelineResponse>(API_PATHS.pipeline, form);
+  return multipart<PipelineResponse>(API_PATHS.pipeline, form, signal);
 }
 
 // ── Pipeline history ──────────────────────────────────────────────────────────

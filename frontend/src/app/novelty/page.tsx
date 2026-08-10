@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RequiresReport } from "@/components/workflow/requires-report";
 import { WorkflowHeader } from "@/components/workflow/workflow-header";
 import { analyzeNovelty } from "@/lib/api";
+import { useWorkflow } from "@/lib/context/workflow-context";
 import { toError } from "@/lib/utils/workflow";
 import type {
   AnalysisReport,
@@ -47,6 +48,7 @@ const strategyLabels: Record<string, string> = {
 };
 
 export default function NoveltyPage() {
+  const { setNovelty: saveNovelty } = useWorkflow();
   const [goal, setGoal] = useState("");
   const [analysis, setAnalysis] = useState<NoveltyAnalysis | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -58,12 +60,13 @@ export default function NoveltyPage() {
     try {
       const res = await analyzeNovelty(report, goal.trim() || undefined);
       setAnalysis(res.novelty);
+      saveNovelty(res.novelty);
     } catch (err) {
       setError(toError(err));
     } finally {
       setIsLoading(false);
     }
-  }, [goal]);
+  }, [goal, saveNovelty]);
 
   return (
     <RequiresReport>
