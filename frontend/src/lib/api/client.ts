@@ -114,11 +114,16 @@ async function request<T>(
 }
 
 /** Multipart request/response wrapper. Content-Type is left to the browser. */
-async function multipart<T>(path: string, form: FormData): Promise<T> {
+async function multipart<T>(
+  path: string,
+  form: FormData,
+  signal?: AbortSignal,
+): Promise<T> {
   const response = await fetch(resolve(path), {
     method: "POST",
     body: form,
     credentials: "same-origin",
+    signal,
   });
 
   const body = await parseBody<T | ErrorResponse>(response);
@@ -315,18 +320,23 @@ export function getProjectHistory(
 
 // ── Analysis ──────────────────────────────────────────────────────────────────
 
-export function analyzeArchive(archive: File): Promise<AnalysisReport> {
+export function analyzeArchive(
+  archive: File,
+  signal?: AbortSignal,
+): Promise<AnalysisReport> {
   const form = new FormData();
   form.set("archive", archive);
-  return multipart<AnalysisReport>(API_PATHS.analyzeArchive, form);
+  return multipart<AnalysisReport>(API_PATHS.analyzeArchive, form, signal);
 }
 
 export function analyzeRepository(
   repositoryUrl: string,
+  signal?: AbortSignal,
 ): Promise<AnalysisReport> {
   return request<AnalysisReport>(API_PATHS.analyzeRepository, {
     method: "POST",
     body: JSON.stringify({ repositoryUrl }),
+    signal,
   });
 }
 

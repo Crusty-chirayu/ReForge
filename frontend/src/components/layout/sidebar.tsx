@@ -41,7 +41,7 @@ const navSections: NavSection[] = [
   {
     title: "WORKBENCH",
     items: [
-      { label: "Analyze", href: "/analyze", icon: Search, soon: true },
+      { label: "Analyze", href: "/analyze", icon: Search },
       { label: "Pipeline", href: "/pipeline", icon: Zap, soon: true },
       { label: "Snapshots", href: "/snapshots", icon: FolderArchive, soon: true },
       { label: "Novelty", href: "/novelty", icon: Sparkles, soon: true },

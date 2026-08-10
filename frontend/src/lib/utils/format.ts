@@ -49,3 +49,25 @@ export function formatRelativeTime(iso: string): string {
 export function formatNumber(value: number): string {
   return value.toLocaleString();
 }
+
+/** Human-readable byte size, e.g. 1_024_000 → "1.0 MB". */
+export function formatBytes(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.min(
+    Math.floor(Math.log(bytes) / Math.log(1024)),
+    units.length - 1,
+  );
+  const value = bytes / 1024 ** i;
+  const display =
+    i === 0 || value >= 100 ? Math.round(value).toString() : value.toFixed(1);
+  return `${display} ${units[i]}`;
+}
+
+/** Stopwatch-style elapsed time, e.g. 83 → "1:23". */
+export function formatElapsed(totalSeconds: number): string {
+  const s = Math.max(0, Math.floor(totalSeconds));
+  const minutes = Math.floor(s / 60);
+  const seconds = s % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
