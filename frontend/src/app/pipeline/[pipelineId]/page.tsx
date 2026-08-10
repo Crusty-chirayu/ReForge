@@ -2,17 +2,73 @@
 
 import { use } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ChevronRight, Clock, Zap } from "lucide-react";
+import { ArrowLeft, ChevronRight, RefreshCw, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader } from "@/components/ui/card";
-import { EmptyState } from "@/components/ui/empty-state";
+import { Card } from "@/components/ui/card";
+import { CopyButton } from "@/components/ui/copy-button";
 import { ErrorState } from "@/components/ui/error-state";
 import { Mono } from "@/components/ui/mono";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
+import {
+  AnalysisSection,
+  BuildSection,
+  DiffSummarySection,
+  ExecutionSection,
+  ImpactSection,
+  PlanSection,
+  ProvenanceSection,
+  RollbackSection,
+  VerificationSection,
+} from "@/components/pipeline/pipeline-sections";
+import { PipelineStepper } from "@/components/pipeline/pipeline-stepper";
+import { ApiError } from "@/lib/api";
 import { usePipeline } from "@/lib/query/use-pipeline";
-import { pipelineStatusVariant } from "@/lib/utils/status";
+import { pipelineStatusVariant, verificationVariant } from "@/lib/utils/status";
 import { formatDateTime, shortId } from "@/lib/utils/format";
+
+function PageSkeleton() {
+  return (
+    <div
+      className="space-y-6"
+      role="status"
+      aria-label="Loading pipeline result"
+    >
+      <Skeleton className="h-8 w-64" />
+      <Skeleton className="h-28 w-full rounded border border-ink-border/40" />
+      <div className="flex flex-wrap gap-2">
+        {Array.from({ length: 7 }).map((_, i) => (
+          <Skeleton key={i} className="h-20 w-36 rounded border border-ink-border/40" />
+        ))}
+      </div>
+      <Skeleton rows={4} height="3rem" className="w-full" />
+    </div>
+  );
+}
+
+function errorTitle(error: unknown): { title: string; description: string } {
+  if (error instanceof ApiError) {
+    if (error.status === 404)
+      return {
+        title: "Pipeline not found",
+        description: "The requested pipeline result does not exist (404).",
+      };
+    if (error.status === 400)
+      return {
+        title: "Invalid pipeline ID",
+        description: "The pipeline ID failed backend validation (400).",
+      };
+    return {
+      title: `Pipeline request failed (${error.status})`,
+      description: error.message,
+    };
+  }
+  return {
+    title: "Backend unavailable",
+    description:
+      "Unable to reach the ReForge backend. Ensure it is running on http://127.0.0.1:3000, then retry.",
+  };
+}
 
 export default function PipelineDetailPage({
   params,
@@ -21,19 +77,15 @@ export default function PipelineDetailPage({
 }) {
   const { pipelineId } = use(params);
   const router = useRouter();
-  const { data, isLoading, error } = usePipeline(pipelineId);
+  const { data, isLoading, error, refetch, dataUpdatedAt } =
+    usePipeline(pipelineId);
 
   if (isLoading) {
-    return (
-      <div className="space-y-4" role="status" aria-label="Loading pipeline result">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-20 w-full rounded border border-ink-border/40" />
-        <Skeleton rows={4} height="3rem" className="w-full" />
-      </div>
-    );
+    return <PageSkeleton />;
   }
 
   if (error || !data) {
+    const mapped = errorTitle(error);
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-2 text-xs text-ink-muted">
@@ -49,20 +101,12 @@ export default function PipelineDetailPage({
           <Mono className="text-ink-fg">{shortId(pipelineId, 12)}</Mono>
         </div>
         <Card padding="lg">
-          {error ? (
-            <ErrorState
-              title="Unable to load pipeline result"
-              description="GET /v1/pipeline/:pipelineId failed."
-              error={error}
-              onRetry={() => router.refresh()}
-            />
-          ) : (
-            <EmptyState
-              title="Pipeline not found"
-              description="The requested pipeline result could not be found."
-              action={{ label: "Back to Dashboard", onClick: () => router.push("/") }}
-            />
-          )}
+          <ErrorState
+            title={mapped.title}
+            description={mapped.description}
+            error={error}
+            onRetry={() => void refetch()}
+          />
         </Card>
       </div>
     );
@@ -71,10 +115,19 @@ export default function PipelineDetailPage({
   const result = data.result ?? data.execution;
   const exec = result.execution;
 
+  const approvalState = exec
+    ? exec.approved
+      ? "Approved"
+      : "Not approved"
+    : "Not executed";
+  const verificationState = exec?.verification?.attempted
+    ? exec.verification.overallStatus
+    : "Not run";
+
   return (
     <div className="space-y-6">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-xs text-ink-muted">
+      <div className="flex flex-wrap items-center gap-2 text-xs text-ink-muted">
         <Button
           variant="ghost"
           size="sm"
@@ -87,11 +140,27 @@ export default function PipelineDetailPage({
         <span className="font-mono text-ink-fg">Pipeline</span>
         <ChevronRight size={11} className="text-ink-subtle" />
         <Mono className="text-ink-fg">{shortId(pipelineId, 14)}</Mono>
+        <span className="ml-auto flex items-center gap-2">
+          <span className="font-mono text-[9px] text-ink-subtle">
+            updated{" "}
+            {dataUpdatedAt > 0
+              ? formatDateTime(new Date(dataUpdatedAt).toISOString())
+              : "—"}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={<RefreshCw size={12} />}
+            onClick={() => void refetch()}
+          >
+            Refresh
+          </Button>
+        </span>
       </div>
 
       {/* Header */}
       <Card padding="lg">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-lg font-semibold tracking-tight text-ink-fg">
@@ -102,148 +171,174 @@ export default function PipelineDetailPage({
               </StatusBadge>
             </div>
             <p className="mt-1 text-sm text-ink-fg">{result.goal}</p>
-            <div className="mt-1 flex flex-wrap items-center gap-3 font-mono text-[10px] text-ink-subtle">
-              <span>{formatDateTime(result.createdAt)}</span>
-              <span className="text-ink-border">·</span>
-              <span>completed {formatDateTime(result.completedAt)}</span>
-              <span className="text-ink-border">·</span>
-              <span>cleanup {result.workspaceCleanupStatus}</span>
-            </div>
+            <dl className="mt-2 grid gap-x-6 gap-y-1 sm:grid-cols-2 lg:grid-cols-3">
+              <HeaderFact
+                label="Pipeline"
+                value={
+                  <span className="inline-flex items-center gap-1.5">
+                    <Mono className="text-ink-fg">{pipelineId}</Mono>
+                    <CopyButton value={pipelineId} label="Copy pipeline ID" />
+                  </span>
+                }
+              />
+              <HeaderFact
+                label="Snapshot"
+                value={
+                  <span className="inline-flex items-center gap-1.5">
+                    <Mono className="text-steel">{result.snapshot.snapshotId}</Mono>
+                    <CopyButton value={result.snapshot.snapshotId} label="Copy snapshot ID" />
+                  </span>
+                }
+              />
+              <HeaderFact
+                label="Approval"
+                value={
+                  <span
+                    className={
+                      approvalState === "Approved"
+                        ? "text-emerald-400"
+                        : "text-ink-muted"
+                    }
+                  >
+                    {approvalState}
+                  </span>
+                }
+              />
+              <HeaderFact
+                label="Execution"
+                value={
+                  <StatusBadge
+                    variant={
+                      exec
+                        ? exec.status === "SUCCEEDED"
+                          ? "succeeded"
+                          : exec.status === "FAILED" || exec.status === "ROLLED_BACK"
+                            ? "failed"
+                            : "running"
+                        : "muted"
+                    }
+                    size="sm"
+                  >
+                    {exec ? exec.status : "NOT EXECUTED"}
+                  </StatusBadge>
+                }
+              />
+              <HeaderFact
+                label="Verification"
+                value={
+                  <StatusBadge
+                    variant={verificationVariant(
+                      exec?.verification?.attempted
+                        ? exec.verification.overallStatus
+                        : undefined,
+                    )}
+                    size="sm"
+                  >
+                    {verificationState}
+                  </StatusBadge>
+                }
+              />
+              <HeaderFact
+                label="Cleanup"
+                value={
+                  <span
+                    className={
+                      result.workspaceCleanupStatus === "SUCCESS"
+                        ? "text-emerald-400"
+                        : "text-rose-400"
+                    }
+                  >
+                    {result.workspaceCleanupStatus}
+                  </span>
+                }
+              />
+              <HeaderFact
+                label="Created"
+                value={
+                  <span className="text-ink-muted">
+                    {formatDateTime(result.createdAt)}
+                  </span>
+                }
+              />
+              <HeaderFact
+                label="Completed"
+                value={
+                  <span className="text-ink-muted">
+                    {formatDateTime(result.completedAt)}
+                  </span>
+                }
+              />
+            </dl>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 rounded border border-ink-border/40 bg-ink-1 px-2.5 py-1.5">
-              <Zap size={11} className="text-forge" />
-              <Mono className="text-ink-fg">{pipelineId}</Mono>
-            </div>
+          <div className="flex shrink-0 items-center gap-2 rounded border border-ink-border/40 bg-ink-1 px-2.5 py-1.5">
+            <Zap size={11} className="text-forge" />
+            <Mono className="text-ink-fg">{shortId(pipelineId, 12)}</Mono>
           </div>
         </div>
       </Card>
 
-      {/* Summary */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <SummaryTile label="Plan Tasks" value={result.plan?.tasks.length ?? 0} />
-        <SummaryTile
-          label="Impact"
-          value={result.impact?.impactLevel ?? "—"}
-          mono
-        />
-        <SummaryTile
-          label="Build Ops"
-          value={result.build?.fileChanges.length ?? 0}
-        />
-        <SummaryTile
-          label="Execution"
-          value={exec?.status ?? "N/A"}
-          mono
-        />
-        <SummaryTile
-          label="Patches"
-          value={exec?.appliedOperations.length ?? 0}
-        />
-        <SummaryTile
-          label="Verify"
-          value={exec?.verification?.overallStatus ?? "—"}
-          mono
-        />
-      </div>
+      {/* Stage stepper */}
+      <PipelineStepper result={result} />
 
-      {/* Receipt snapshot */}
-      {exec && (
-        <Card padding="none">
-          <CardHeader
-            title="Execution Receipt"
-            subtitle={`${exec.executionId} · snapshot ${shortId(exec.snapshotId, 10)}`}
-          />
-          <div className="space-y-2 px-4 pb-4 text-xs">
-            <div className="flex flex-wrap items-center gap-2">
-              <StatusBadge
-                variant={
-                  exec.status === "SUCCEEDED"
-                    ? "succeeded"
-                    : exec.status === "FAILED" || exec.status === "ROLLED_BACK"
-                      ? "failed"
-                      : "running"
-                }
-              >
-                {exec.status}
-              </StatusBadge>
-              <span className="text-ink-muted">
-                {exec.appliedOperations.length} applied ·{" "}
-                {exec.diffSummary.created.length} created ·{" "}
-                {exec.diffSummary.modified.length} modified ·{" "}
-                {exec.diffSummary.deleted.length} deleted
-              </span>
-            </div>
-            <div className="flex items-center gap-2 text-ink-muted">
-              <Clock size={10} className="text-steel" />
-              <span>
-                {formatDateTime(exec.createdAt)} → {formatDateTime(exec.completedAt)}
-              </span>
-            </div>
-            {exec.rollback.attempted && (
-              <p
-                className={
-                  exec.rollback.succeeded
-                    ? "text-emerald-400"
-                    : "text-rose-400"
-                }
-              >
-                Rollback {exec.rollback.succeeded ? "succeeded" : "failed"} after
-                partial failure.
-              </p>
-            )}
-            {exec.verification?.attempted && (
-              <p className="text-ink-muted">
-                Verification:{" "}
-                <StatusBadge
-                  variant={
-                    exec.verification.overallStatus === "PASSED"
-                      ? "succeeded"
-                      : "failed"
-                  }
-                  size="sm"
-                >
-                  {exec.verification.overallStatus}
-                </StatusBadge>
-              </p>
-            )}
-          </div>
-        </Card>
+      {/* Analysis */}
+      <AnalysisSection report={result.report} />
+
+      {/* Plan */}
+      <PlanSection plan={result.plan} />
+
+      {/* Impact */}
+      <ImpactSection impact={result.impact} />
+
+      {/* Build */}
+      <BuildSection build={result.build} receipt={exec} />
+
+      {/* Execution */}
+      {exec ? (
+        <>
+          <ExecutionSection receipt={exec} />
+          {exec.diffSummary && <DiffSummarySection diff={exec.diffSummary} />}
+          <RollbackSection receipt={exec} />
+        </>
+      ) : (
+        <NotExecutedCard />
       )}
 
-      <Card padding="md" className="border-ink-border/30">
-        <p className="flex items-center gap-2 text-xs text-ink-muted">
-          <Zap size={11} className="text-forge" />
-          The full pipeline experience — plan, impact, build, execution, and
-          verification detail views — arrives in the next phase. This summary is
-          powered by the real pipeline result.
-        </p>
-      </Card>
+      {/* Verification */}
+      <VerificationSection verification={exec?.verification} />
+
+      {/* Provenance */}
+      <ProvenanceSection pipelineId={pipelineId} result={result} />
     </div>
   );
 }
 
-function SummaryTile({
-  label,
-  value,
-  mono = false,
-}: {
-  label: string;
-  value: string | number;
-  mono?: boolean;
-}) {
+function HeaderFact({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="rounded border border-ink-border/40 bg-ink-card/60 px-3 py-2.5">
-      <p className="font-mono text-[9px] uppercase tracking-widest text-ink-subtle">
+    <div className="flex items-center justify-between gap-3">
+      <dt className="shrink-0 font-mono text-[10px] uppercase tracking-wider text-ink-subtle">
         {label}
-      </p>
-      {mono ? (
-        <Mono className="mt-1 block text-ink-fg">{value}</Mono>
-      ) : (
-        <p className="mt-1 text-lg font-bold leading-tight text-ink-fg">
-          {value}
-        </p>
-      )}
+      </dt>
+      <dd className="min-w-0 text-right text-xs">{value}</dd>
     </div>
+  );
+}
+
+function NotExecutedCard() {
+  return (
+    <Card padding="lg" className="border-ink-border/30">
+      <div className="flex items-start gap-3">
+        <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded border border-ink-border/40 bg-ink-1">
+          <Zap size={14} className="text-ink-muted" />
+        </span>
+        <div>
+          <StatusBadge variant="muted">Not Executed</StatusBadge>
+          <p className="mt-2 text-xs text-ink-muted">
+            This pipeline ran in proposal mode — a full analysis, plan, impact
+            model, and proposed build were produced, but no patches were
+            applied. This is a complete proposal, not a failure.
+          </p>
+        </div>
+      </div>
+    </Card>
   );
 }
