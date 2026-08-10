@@ -5,12 +5,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType, SVGProps } from "react";
 import {
+  Activity,
   ChevronRight,
   FolderArchive,
   LayoutDashboard,
   Search,
   Server,
   Sparkles,
+  Target,
   Zap,
 } from "lucide-react";
 import { useHealth } from "@/lib/query/use-health";
@@ -42,9 +44,11 @@ const navSections: NavSection[] = [
     title: "WORKBENCH",
     items: [
       { label: "Analyze", href: "/analyze", icon: Search },
+      { label: "Plan", href: "/plan", icon: Target },
+      { label: "Novelty", href: "/novelty", icon: Sparkles },
+      { label: "Impact", href: "/impact", icon: Activity },
       { label: "Pipeline", href: "/pipeline", icon: Zap, soon: true },
       { label: "Snapshots", href: "/snapshots", icon: FolderArchive, soon: true },
-      { label: "Novelty", href: "/novelty", icon: Sparkles, soon: true },
     ],
   },
 ];

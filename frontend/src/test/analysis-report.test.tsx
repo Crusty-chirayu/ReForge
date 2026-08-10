@@ -160,7 +160,7 @@ describe("Analysis report page", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders next-step actions as coming-next and disabled", () => {
+  it("renders next-step actions — workflows enabled, pipeline coming-next", () => {
     reportState.value = mockAnalysisReport;
     renderReport();
 
@@ -173,13 +173,17 @@ describe("Analysis report page", () => {
     const noveltyButton = screen.getByRole("button", {
       name: /Explore Novelty/,
     });
-    const pipelineButton = screen.getByRole("button", { name: /Run Pipeline/ });
+    const pipelineButton = screen.getByRole("button", {
+      name: /Run Pipeline — coming next/,
+    });
 
-    expect(planButton).toBeDisabled();
-    expect(impactButton).toBeDisabled();
-    expect(noveltyButton).toBeDisabled();
+    // Plan / Impact / Novelty are live workflows in F4.
+    expect(planButton).toBeEnabled();
+    expect(impactButton).toBeEnabled();
+    expect(noveltyButton).toBeEnabled();
+    // Run Pipeline ships later and stays clearly marked.
     expect(pipelineButton).toBeDisabled();
-    expect(screen.getAllByText("coming next").length).toBeGreaterThanOrEqual(4);
+    expect(screen.getAllByText("coming next").length).toBeGreaterThanOrEqual(1);
   });
 
   it("navigates back to the analyze page", () => {
