@@ -90,6 +90,80 @@ describe("Analysis report page", () => {
     ).toBeInTheDocument();
   });
 
+  it("renders every finding when one rule reports multiple times", () => {
+    // Regression: `ruleId` identifies the Doctor *rule*, not the finding, so a
+    // single rule legitimately fires against several modules. A real report
+    // contained two ARCH-002 "high fan-out module" findings, which collided on
+    // `key={finding.ruleId}` and made React drop one of them.
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    const duplicateRuleReport: AnalysisReport = {
+      ...mockAnalysisReport,
+      doctor: {
+        ...mockAnalysisReport.doctor!,
+        findings: [
+          {
+            ruleId: "ARCH-002",
+            category: "ARCHITECTURE",
+            severity: "MEDIUM",
+            confidence: "HIGH",
+            title: "High fan-out module",
+            description: "This module imports an unusually high number of modules.",
+            impact: "Changes here ripple widely across the codebase.",
+            remediation: "Extract cohesive responsibilities into focused modules.",
+            evidence: [
+              { file: "src/components/Character/Scene.tsx", detail: "imports 24 modules" },
+            ],
+            affectedFiles: ["src/components/Character/Scene.tsx"],
+          },
+          {
+            ruleId: "ARCH-002",
+            category: "ARCHITECTURE",
+            severity: "MEDIUM",
+            confidence: "HIGH",
+            title: "High fan-out module",
+            description: "This module imports an unusually high number of modules.",
+            impact: "Changes here ripple widely across the codebase.",
+            remediation: "Extract cohesive responsibilities into focused modules.",
+            evidence: [
+              { file: "src/components/MainContainer.tsx", detail: "imports 19 modules" },
+            ],
+            affectedFiles: ["src/components/MainContainer.tsx"],
+          },
+        ],
+      },
+    };
+
+    reportState.value = duplicateRuleReport;
+    renderReport();
+
+    // Both findings survive — neither is deduplicated nor dropped.
+    expect(screen.getAllByText("ARCH-002")).toHaveLength(2);
+    expect(screen.getAllByText("High fan-out module")).toHaveLength(2);
+
+    // Each finding keeps its own distinct evidence, proving they are separate
+    // nodes rather than one row rendered twice. (Each path appears both as an
+    // affected-file chip and inside its evidence line.)
+    expect(
+      screen.getAllByText(/src\/components\/Character\/Scene\.tsx/).length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText(/src\/components\/MainContainer\.tsx/).length,
+    ).toBeGreaterThan(0);
+    expect(screen.getAllByText(/imports 24 modules/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/imports 19 modules/).length).toBeGreaterThan(0);
+
+    // And React raised no duplicate-key warning.
+    const warnings = consoleError.mock.calls
+      .map((args) => args.join(" "))
+      .filter((message) => message.includes("same key"));
+    expect(warnings).toEqual([]);
+
+    consoleError.mockRestore();
+  });
+
   it("renders severity badges for every severity level", () => {
     reportState.value = mockAnalysisReport;
     renderReport();

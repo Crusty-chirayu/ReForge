@@ -618,9 +618,17 @@ function DoctorSection({ report }: { report: AnalysisReport }) {
           </Card>
 
           <div className="space-y-2">
-            {doctor.findings.map((finding) => (
+            {/*
+              `ruleId` identifies the Doctor *rule*, not the finding, so one
+              rule legitimately reports against several modules — e.g. two
+              ARCH-002 "high fan-out module" findings for different files.
+              Keying on it alone collides. The list is rendered in backend
+              order and is never sorted or filtered client-side, so the index
+              disambiguates duplicates without reordering risk.
+            */}
+            {doctor.findings.map((finding, i) => (
               <div
-                key={finding.ruleId}
+                key={`${finding.ruleId}-${i}`}
                 className="space-y-2 rounded border border-ink-border/30 bg-ink-1/30 p-4"
               >
                 <div className="flex flex-wrap items-center gap-2">
