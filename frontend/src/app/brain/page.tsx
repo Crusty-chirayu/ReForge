@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
+import { describeApiError } from "@/lib/utils/api-error";
 import { Mono } from "@/components/ui/mono";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
@@ -311,7 +312,12 @@ export default function BrainPage() {
                       {!isProviderUnavailable(entry.error) && (
                         <ErrorState
                           title="Brain query failed"
-                          description="POST /v1/brain/query failed."
+                          description={
+                            describeApiError(entry.error, {
+                              resource: "Brain answer",
+                              endpoint: "POST /v1/brain/query",
+                            }).description
+                          }
                           error={entry.error}
                           onRetry={() => void runQuery(entry.question, report)}
                         />
@@ -385,7 +391,7 @@ function ReportContextCard({ report }: { report: AnalysisReport }) {
         title="Report Context"
         subtitle="The deterministic analysis report used for Brain queries"
       />
-      <dl className="grid gap-x-6 gap-y-1.5 sm:grid-cols-2 lg:grid-cols-5">
+      <dl className="grid gap-x-6 gap-y-1.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {items.map((item) => (
           <div key={item.label} className="flex items-center justify-between gap-2">
             <dt className="font-mono text-[10px] uppercase tracking-wider text-ink-subtle">

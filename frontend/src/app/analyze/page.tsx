@@ -17,23 +17,33 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Mono } from "@/components/ui/mono";
-import { ApiError, analyzeArchive, analyzeRepository } from "@/lib/api";
+import { analyzeArchive, analyzeRepository } from "@/lib/api";
 import { useReport } from "@/lib/context/report-context";
 import { formatBytes, formatElapsed } from "@/lib/utils/format";
+import {
+  MAX_ARCHIVE_LABEL,
+  validateArchive,
+  validateRepositoryUrl,
+} from "@/lib/utils/archive";
+import { describeApiError, isAbortError } from "@/lib/utils/api-error";
 
 type Mode = "zip" | "github";
 type Phase = "idle" | "running";
 
 const STAGES = ["INGEST", "ANALYZE", "INDEX", "DIAGNOSE", "REPORT"] as const;
 
-function isAbortError(err: unknown): boolean {
-  return err instanceof DOMException && err.name === "AbortError";
-}
+/** Id linking the submit error to the inputs that produced it. */
+const ANALYZE_ERROR_ID = "analyze-error";
 
-function errorMessage(err: unknown): string {
-  if (err instanceof ApiError) return err.message;
-  if (err instanceof Error) return err.message;
-  return "Analysis failed.";
+/**
+ * Surface the backend's own message when it gave one; otherwise explain the
+ * transport failure honestly rather than inventing a cause.
+ */
+function analysisErrorMessage(err: unknown): string {
+  if (err instanceof Error && err.message && !(err instanceof TypeError)) {
+    return err.message;
+  }
+  return describeApiError(err, { resource: "analysis" }).description;
 }
 
 export default function AnalyzePage() {
@@ -78,8 +88,10 @@ export default function AnalyzePage() {
 
   const handleFileSelect = useCallback((candidate: File | null | undefined) => {
     if (!candidate) return;
-    if (!candidate.name.toLowerCase().endsWith(".zip")) {
-      setError("Only .zip archives are accepted.");
+    const problem = validateArchive(candidate);
+    if (problem) {
+      setFile(null);
+      setError(problem);
       return;
     }
     setFile(candidate);
@@ -96,9 +108,17 @@ export default function AnalyzePage() {
   );
 
   const runAnalysis = useCallback(async () => {
+    // Guard against double submission (Enter + click, or an impatient retry).
     if (phase === "running") return;
     if (mode === "zip" && !file) return;
-    if (mode === "github" && !repoUrl.trim()) return;
+
+    if (mode === "github") {
+      const problem = validateRepositoryUrl(repoUrl);
+      if (problem) {
+        setError(problem);
+        return;
+      }
+    }
 
     setError(null);
     setPhase("running");
@@ -121,7 +141,7 @@ export default function AnalyzePage() {
       router.push("/analyze/report");
     } catch (err) {
       if (isAbortError(err)) return;
-      setError(errorMessage(err));
+      setError(analysisErrorMessage(err));
       setPhase("idle");
     } finally {
       stopTimers();
@@ -198,7 +218,14 @@ export default function AnalyzePage() {
           onCancel={cancel}
         />
       ) : (
-        <div className="space-y-4">
+        <form
+          className="space-y-4"
+          noValidate
+          onSubmit={(e) => {
+            e.preventDefault();
+            void runAnalysis();
+          }}
+        >
           {mode === "zip" ? (
             <ZipDropzone
               file={file}
@@ -228,6 +255,10 @@ export default function AnalyzePage() {
               />
               <div className="flex flex-col gap-3">
                 <Input
+                  type="url"
+                  inputMode="url"
+                  autoComplete="off"
+                  spellCheck={false}
                   placeholder="https://github.com/owner/repo"
                   value={repoUrl}
                   onChange={(e) => {
@@ -236,6 +267,8 @@ export default function AnalyzePage() {
                   }}
                   icon={<GitBranch size={14} />}
                   aria-label="Repository URL"
+                  aria-invalid={error ? true : undefined}
+                  aria-describedby={error ? ANALYZE_ERROR_ID : undefined}
                 />
                 <p className="flex items-center gap-1 text-[10px] text-ink-subtle">
                   <Lock size={10} />
@@ -248,10 +281,15 @@ export default function AnalyzePage() {
 
           {error && (
             <div
+              id={ANALYZE_ERROR_ID}
               role="alert"
               className="flex flex-wrap items-center gap-2 rounded border border-rose-500/25 bg-rose-500/5 px-3 py-2"
             >
-              <AlertTriangle size={13} className="shrink-0 text-rose-400" />
+              <AlertTriangle
+                size={13}
+                aria-hidden="true"
+                className="shrink-0 text-rose-400"
+              />
               <p className="min-w-0 flex-1 text-xs text-rose-400">{error}</p>
               <Button variant="ghost" size="sm" onClick={resetForm}>
                 Reset
@@ -260,16 +298,16 @@ export default function AnalyzePage() {
           )}
 
           <Button
+            type="submit"
             variant="forge"
             size="lg"
             icon={mode === "zip" ? <Upload size={14} /> : <GitBranch size={14} />}
-            onClick={() => void runAnalysis()}
             disabled={!canSubmit}
             className="w-full sm:w-auto"
           >
             {mode === "zip" ? "Analyze Archive" : "Analyze Repository"}
           </Button>
-        </div>
+        </form>
       )}
 
       {/* Trust indicators */}
@@ -351,7 +389,7 @@ function ZipDropzone({
               : "Drop a ZIP archive here, or browse"}
           </p>
           <p className="mt-1 text-xs text-ink-muted">
-            Accepts .zip only · Maximum 200 MB
+            Accepts .zip only · Maximum {MAX_ARCHIVE_LABEL}
           </p>
         </div>
 

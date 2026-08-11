@@ -4,6 +4,7 @@ import { ChevronRight } from "lucide-react";
 import { Card, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
+import { describeApiError } from "@/lib/utils/api-error";
 import { Mono } from "@/components/ui/mono";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -58,7 +59,12 @@ export function ProjectHistorySection({
         ) : error ? (
           <ErrorState
             title="Unable to load project history"
-            description="GET /v1/project/history failed."
+            description={
+              describeApiError(error, {
+                resource: "project history",
+                endpoint: "GET /v1/project/history",
+              }).description
+            }
             error={error}
             onRetry={onRetry}
           />

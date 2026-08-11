@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
+import { describeApiError } from "@/lib/utils/api-error";
 import { Mono } from "@/components/ui/mono";
 import { StatusBadge, type StatusVariant } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -203,7 +204,12 @@ export default function ImpactPage() {
               {!isLoading && error && (
                 <ErrorState
                   title="Unable to analyze impact"
-                  description="POST /v1/impact failed."
+                  description={
+                describeApiError(error, {
+                  resource: "impact report",
+                  endpoint: "POST /v1/impact",
+                }).description
+              }
                   error={error}
                   onRetry={() => void handleAnalyze(report)}
                 />
@@ -304,7 +310,7 @@ function ImpactView({
       {/* Blast radius */}
       <Card padding="lg">
         <CardHeader title="Blast Radius" subtitle="Scope of potential impact" />
-        <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+        <div className="grid grid-cols-2 gap-2 xs:grid-cols-3 sm:grid-cols-6">
           <BlastMetric label="Direct" value={impact.blastRadius.directModules} />
           <BlastMetric label="Indirect" value={impact.blastRadius.indirectModules} />
           <BlastMetric label="API Routes" value={impact.blastRadius.apiRoutes} />

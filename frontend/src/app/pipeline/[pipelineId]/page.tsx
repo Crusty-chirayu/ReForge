@@ -23,6 +23,7 @@ import {
 } from "@/components/pipeline/pipeline-sections";
 import { PipelineStepper } from "@/components/pipeline/pipeline-stepper";
 import { ApiError } from "@/lib/api";
+import { describeApiError } from "@/lib/utils/api-error";
 import { usePipeline } from "@/lib/query/use-pipeline";
 import { pipelineStatusVariant, verificationVariant } from "@/lib/utils/status";
 import { formatDateTime, shortId } from "@/lib/utils/format";
@@ -46,28 +47,26 @@ function PageSkeleton() {
   );
 }
 
+/**
+ * Map a failed pipeline fetch onto honest console copy. Delegates to the
+ * shared classifier so every page describes 404 / 503 / transport failures
+ * the same way.
+ */
 function errorTitle(error: unknown): { title: string; description: string } {
-  if (error instanceof ApiError) {
-    if (error.status === 404)
-      return {
-        title: "Pipeline not found",
-        description: "The requested pipeline result does not exist (404).",
-      };
-    if (error.status === 400)
-      return {
-        title: "Invalid pipeline ID",
-        description: "The pipeline ID failed backend validation (400).",
-      };
+  if (error instanceof ApiError && error.status === 400) {
     return {
-      title: `Pipeline request failed (${error.status})`,
-      description: error.message,
+      title: "Invalid pipeline ID",
+      description:
+        "The pipeline ID failed backend validation (400). Open the run from Pipeline History to get a valid link.",
     };
   }
-  return {
-    title: "Backend unavailable",
-    description:
-      "Unable to reach the ReForge backend. Ensure it is running on http://127.0.0.1:3000, then retry.",
-  };
+  return describeApiError(error, {
+    resource: "pipeline",
+    endpoint: "GET /v1/pipeline/:id",
+    notFoundTitle: "Pipeline not found",
+    notFoundDescription:
+      "The requested pipeline result does not exist (404).",
+  });
 }
 
 export default function PipelineDetailPage({
@@ -107,6 +106,23 @@ export default function PipelineDetailPage({
             error={error}
             onRetry={() => void refetch()}
           />
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <Button
+              variant="muted"
+              size="sm"
+              icon={<Zap size={12} />}
+              onClick={() => router.push("/")}
+            >
+              Pipeline History
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push("/pipeline/new")}
+            >
+              Start a new run
+            </Button>
+          </div>
         </Card>
       </div>
     );

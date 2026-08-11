@@ -5,51 +5,74 @@ import {
   Activity,
   Brain,
   ChevronRight,
+  FolderArchive,
   Sparkles,
   Target,
+  Wrench,
   Zap,
+  type LucideIcon,
 } from "lucide-react";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SectionTitle } from "./sections";
 
-const ACTIONS = [
+interface ReportAction {
+  label: string;
+  icon: LucideIcon;
+  route: string;
+  detail: string;
+}
+
+/**
+ * Every next step is a live route. Nothing here is gated, planned, or
+ * "coming soon" — if it is listed, it works today.
+ */
+const ACTIONS: ReportAction[] = [
   {
     label: "Create Improvement Plan",
     icon: Target,
     route: "/plan",
-    comingSoon: false,
+    detail: "Sequence the work into tasks",
   },
   {
     label: "Analyze Change Impact",
     icon: Activity,
     route: "/impact",
-    comingSoon: false,
+    detail: "Model the blast radius of a change",
   },
   {
     label: "Explore Novelty",
     icon: Sparkles,
     route: "/novelty",
-    comingSoon: false,
+    detail: "Find differentiating opportunities",
+  },
+  {
+    label: "Generate Build Plan",
+    icon: Wrench,
+    route: "/build",
+    detail: "Draft a reviewable patch proposal",
   },
   {
     label: "Ask Project Brain",
     icon: Brain,
     route: "/brain",
-    comingSoon: false,
+    detail: "Question the evidence directly",
   },
   {
     label: "Run Pipeline",
     icon: Zap,
     route: "/pipeline/new",
-    comingSoon: false,
+    detail: "Execute end-to-end with verification",
   },
-] as const;
+  {
+    label: "Browse Snapshots",
+    icon: FolderArchive,
+    route: "/snapshots",
+    detail: "Compare versioned project state",
+  },
+];
 
-/**
- * Next-step workflow actions. Plan / Novelty / Impact / Brain / Pipeline are
- * live workflows; Snapshots detail lands in a later phase.
- */
+/** Next-step workflow actions from the analysis report. */
 export function ReportActions() {
   const router = useRouter();
 
@@ -59,25 +82,31 @@ export function ReportActions() {
       <Card padding="none">
         <CardHeader
           title="Intelligence Workflows"
-          subtitle="Your report is preserved in memory and is reused by each workflow automatically"
+          subtitle="Your report stays loaded for this tab and is reused by each workflow automatically"
         />
         <div className="grid gap-3 px-4 pb-4 sm:grid-cols-2 lg:grid-cols-3">
-          {ACTIONS.map((action) => (
-            <Button
-              key={action.route}
-              variant="muted"
-              icon={<action.icon size={13} />}
-              iconRight={<ChevronRight size={12} />}
-              className="w-full justify-start hover:border-steel/30 hover:text-steel"
-              onClick={() => router.push(action.route)}
-            >
-              {action.label}
-            </Button>
-          ))}
+          {ACTIONS.map((action) => {
+            const Icon = action.icon;
+            return (
+              <Button
+                key={action.route}
+                variant="muted"
+                icon={<Icon size={13} />}
+                iconRight={<ChevronRight size={12} />}
+                title={action.detail}
+                className="h-auto w-full justify-start py-2 text-left hover:border-steel/30 hover:text-steel"
+                onClick={() => router.push(action.route)}
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate">{action.label}</span>
+                  <span className="block truncate text-[10px] font-normal text-ink-subtle">
+                    {action.detail}
+                  </span>
+                </span>
+              </Button>
+            );
+          })}
         </div>
-        <p className="px-4 pb-4 text-[10px] text-ink-subtle">
-          Snapshots detail lands in a later phase.
-        </p>
       </Card>
     </section>
   );

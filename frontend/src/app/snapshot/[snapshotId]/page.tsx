@@ -15,6 +15,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { CopyButton } from "@/components/ui/copy-button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
+import { describeApiError } from "@/lib/utils/api-error";
 import { Mono } from "@/components/ui/mono";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -161,12 +162,27 @@ export default function SnapshotDetailPage({
       {/* Header */}
       <SnapshotHeader snapshot={snapshot} />
 
-      {/* Tabs */}
-      <div className="flex w-fit gap-1 rounded border border-ink-border/40 bg-ink-1 p-1">
+      {/* Tabs — real tablist semantics with arrow-key navigation. */}
+      <div
+        role="tablist"
+        aria-label="Snapshot views"
+        className="flex w-fit gap-1 rounded border border-ink-border/40 bg-ink-1 p-1"
+        onKeyDown={(e) => {
+          if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+          e.preventDefault();
+          setTab((current) =>
+            current === "overview" ? "intelligence" : "overview",
+          );
+        }}
+      >
         <button
           type="button"
+          role="tab"
+          id="snapshot-tab-overview"
+          aria-selected={tab === "overview"}
+          aria-controls="snapshot-panel-overview"
+          tabIndex={tab === "overview" ? 0 : -1}
           onClick={() => setTab("overview")}
-          aria-pressed={tab === "overview"}
           className={[
             "flex items-center gap-2 rounded px-3 py-1.5 text-xs font-medium transition-colors",
             tab === "overview"
@@ -174,13 +190,17 @@ export default function SnapshotDetailPage({
               : "text-ink-muted hover:text-ink-fg",
           ].join(" ")}
         >
-          <Layers size={13} />
+          <Layers size={13} aria-hidden="true" />
           Overview
         </button>
         <button
           type="button"
+          role="tab"
+          id="snapshot-tab-intelligence"
+          aria-selected={tab === "intelligence"}
+          aria-controls="snapshot-panel-intelligence"
+          tabIndex={tab === "intelligence" ? 0 : -1}
           onClick={() => setTab("intelligence")}
-          aria-pressed={tab === "intelligence"}
           className={[
             "flex items-center gap-2 rounded px-3 py-1.5 text-xs font-medium transition-colors",
             tab === "intelligence"
@@ -188,20 +208,32 @@ export default function SnapshotDetailPage({
               : "text-ink-muted hover:text-ink-fg",
           ].join(" ")}
         >
-          <RotateCcw size={13} />
+          <RotateCcw size={13} aria-hidden="true" />
           Intelligence
         </button>
       </div>
 
       {tab === "overview" ? (
-        <OverviewTab snapshot={snapshot} />
+        <div
+          role="tabpanel"
+          id="snapshot-panel-overview"
+          aria-labelledby="snapshot-tab-overview"
+        >
+          <OverviewTab snapshot={snapshot} />
+        </div>
       ) : (
-        <IntelligenceTab
-          loading={intelligenceQuery.isLoading}
-          error={intelligenceQuery.error}
-          data={intelligenceQuery.data?.intelligence}
-          onRetry={() => void intelligenceQuery.refetch()}
-        />
+        <div
+          role="tabpanel"
+          id="snapshot-panel-intelligence"
+          aria-labelledby="snapshot-tab-intelligence"
+        >
+          <IntelligenceTab
+            loading={intelligenceQuery.isLoading}
+            error={intelligenceQuery.error}
+            data={intelligenceQuery.data?.intelligence}
+            onRetry={() => void intelligenceQuery.refetch()}
+          />
+        </div>
       )}
     </div>
   );
@@ -396,13 +428,16 @@ function OverviewTab({ snapshot }: { snapshot: ProjectSnapshot }) {
             No dependencies recorded in this snapshot.
           </p>
         ) : (
-          <div className="px-4 pb-4">
-            <table className="w-full text-left text-xs">
+          <div className="overflow-x-auto px-4 pb-4">
+            <table className="w-full min-w-[420px] text-left text-xs">
+              <caption className="sr-only">
+                Dependencies recorded in this snapshot
+              </caption>
               <thead className="font-mono text-[9px] uppercase tracking-widest text-ink-subtle">
                 <tr>
-                  <th className="py-2 pr-3">Name</th>
-                  <th className="pr-3">Version</th>
-                  <th>Type</th>
+                  <th scope="col" className="py-2 pr-3">Name</th>
+                  <th scope="col" className="pr-3">Version</th>
+                  <th scope="col">Type</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-ink-border/20">
@@ -537,7 +572,12 @@ function IntelligenceTab({
     return (
       <ErrorState
         title="Unable to load snapshot intelligence"
-        description="GET /v1/snapshot/:snapshotId/intelligence failed."
+        description={
+                describeApiError(error, {
+                  resource: "snapshot intelligence",
+                  endpoint: "GET /v1/snapshot/:id/intelligence",
+                }).description
+              }
         error={error}
         onRetry={onRetry}
       />
@@ -561,7 +601,7 @@ function IntelligenceTab({
   return (
     <div className="space-y-6" data-testid="intelligence-section">
       {/* Header stats */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <StatTile label="Snapshots" value={data.snapshotCount} />
         <StatTile label="Total Files" value={data.totalFiles} />
         <StatTile label="Source" value={data.sourceFileCount} />

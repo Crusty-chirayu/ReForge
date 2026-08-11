@@ -5,6 +5,9 @@
    primary, steel/cyan secondary. Tailwind v4 CSS-first tokens.
    ───────────────────────────────────────────────────────────── */
 @theme {
+  /* Breakpoints — `xs` covers large phones, where 3-up numeric grids still fit */
+  --breakpoint-xs: 26rem;
+
   /* Surfaces — graphite / navy */
   --color-ink-0: #070b14;
   --color-ink-1: #0d1424;

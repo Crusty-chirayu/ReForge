@@ -366,16 +366,19 @@ function CodeSection({ report }: { report: AnalysisReport }) {
             title="Symbols"
             subtitle={`${projectModel.symbols.length} symbols across the model`}
           />
-          <div className="max-h-80 overflow-y-auto px-4 pb-4">
-            <table className="w-full text-left text-xs">
+          <div className="max-h-80 overflow-auto px-4 pb-4">
+            <table className="w-full min-w-[640px] text-left text-xs">
+              <caption className="sr-only">
+                Symbols discovered across the project model
+              </caption>
               <thead className="sticky top-0 bg-ink-card font-mono text-[9px] uppercase tracking-widest text-ink-subtle">
                 <tr>
-                  <th className="py-2 pr-3">Name</th>
-                  <th className="pr-3">Type</th>
-                  <th className="pr-3">File</th>
-                  <th className="pr-3">Line</th>
-                  <th className="pr-3">Exported</th>
-                  <th>Imported</th>
+                  <th scope="col" className="py-2 pr-3">Name</th>
+                  <th scope="col" className="pr-3">Type</th>
+                  <th scope="col" className="pr-3">File</th>
+                  <th scope="col" className="pr-3">Line</th>
+                  <th scope="col" className="pr-3">Exported</th>
+                  <th scope="col">Imported</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-ink-border/20">
@@ -489,12 +492,15 @@ function DependenciesSection({ report }: { report: AnalysisReport }) {
         ) : (
           <div className="overflow-x-auto px-4 pb-4">
             <table className="w-full min-w-[520px] text-left text-xs">
+              <caption className="sr-only">
+                Resolved dependencies with supporting evidence
+              </caption>
               <thead className="font-mono text-[9px] uppercase tracking-widest text-ink-subtle">
                 <tr>
-                  <th className="py-2 pr-3">Name</th>
-                  <th className="pr-3">Version</th>
-                  <th className="pr-3">Type</th>
-                  <th>Evidence</th>
+                  <th scope="col" className="py-2 pr-3">Name</th>
+                  <th scope="col" className="pr-3">Version</th>
+                  <th scope="col" className="pr-3">Type</th>
+                  <th scope="col">Evidence</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-ink-border/20">

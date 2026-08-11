@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
+import { describeApiError } from "@/lib/utils/api-error";
 import { Mono } from "@/components/ui/mono";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -162,7 +163,12 @@ export default function NoveltyPage() {
               {!isLoading && error && (
                 <ErrorState
                   title="Unable to analyze novelty"
-                  description="POST /v1/novelty failed."
+                  description={
+                describeApiError(error, {
+                  resource: "novelty analysis",
+                  endpoint: "POST /v1/novelty",
+                }).description
+              }
                   error={error}
                   onRetry={() => void handleAnalyze(report)}
                 />

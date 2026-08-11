@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
+import { describeApiError } from "@/lib/utils/api-error";
 import { Mono } from "@/components/ui/mono";
 import { StatusBadge, type StatusVariant } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -263,7 +264,12 @@ export default function BuildPage() {
               {!isGenerating && error && (
                 <ErrorState
                   title="Unable to generate build"
-                  description="POST /v1/build failed."
+                  description={
+                describeApiError(error, {
+                  resource: "build plan",
+                  endpoint: "POST /v1/build",
+                }).description
+              }
                   error={error}
                   onRetry={() => void handleGenerate(report)}
                 />

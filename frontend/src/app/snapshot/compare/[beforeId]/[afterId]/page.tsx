@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
+import { describeApiError } from "@/lib/utils/api-error";
 import { Mono } from "@/components/ui/mono";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -91,7 +92,10 @@ export default function SnapshotComparePage({
               description={
                 is404
                   ? "One or both of the requested snapshots do not exist (404)."
-                  : "GET /v1/snapshots/:beforeId/compare/:afterId failed."
+                  : describeApiError(query.error, {
+                      resource: "snapshot comparison",
+                      endpoint: "GET /v1/snapshots/:a/compare/:b",
+                    }).description
               }
               error={query.error}
               onRetry={() => void query.refetch()}
@@ -158,7 +162,7 @@ export default function SnapshotComparePage({
       </Card>
 
       {/* Summary */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5" data-testid="diff-summary">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5" data-testid="diff-summary">
         <CountTile label="Created" value={diff.summary.totalCreated} color="text-emerald-400" icon={<Plus size={12} />} />
         <CountTile label="Modified" value={diff.summary.totalModified} color="text-steel" icon={<Pencil size={12} />} />
         <CountTile label="Deleted" value={diff.summary.totalDeleted} color="text-rose-400" icon={<Trash2 size={12} />} />

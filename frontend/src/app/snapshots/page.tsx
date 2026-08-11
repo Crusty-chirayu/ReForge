@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
@@ -25,11 +25,9 @@ import { createSnapshot } from "@/lib/api";
 import { useProjectHistory } from "@/lib/query/use-project-history";
 import { formatBytes, formatDateTime, shortId } from "@/lib/utils/format";
 import { verificationVariant } from "@/lib/utils/status";
+import { MAX_ARCHIVE_LABEL, validateArchive } from "@/lib/utils/archive";
+import { describeApiError } from "@/lib/utils/api-error";
 import type { ProjectHistoryItem } from "@/lib/api/types";
-
-function isZip(name: string): boolean {
-  return name.toLowerCase().endsWith(".zip");
-}
 
 export default function SnapshotsPage() {
   const router = useRouter();
@@ -55,6 +53,7 @@ export default function SnapshotsPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<Error | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
+  const zipInputRef = useRef<HTMLInputElement>(null);
 
   const options = useMemo(
     () =>
@@ -67,8 +66,10 @@ export default function SnapshotsPage() {
 
   const handleFile = useCallback((candidate: File | null | undefined) => {
     if (!candidate) return;
-    if (!isZip(candidate.name)) {
-      setUploadError(new Error("Only .zip archives are accepted."));
+    const problem = validateArchive(candidate);
+    if (problem) {
+      setFile(null);
+      setUploadError(new Error(problem));
       return;
     }
     setFile(candidate);
@@ -76,7 +77,8 @@ export default function SnapshotsPage() {
   }, []);
 
   const handleUpload = useCallback(async () => {
-    if (!file) return;
+    // Guard against a second click while the first upload is still in flight.
+    if (!file || isUploading) return;
     setIsUploading(true);
     setUploadError(null);
     try {
@@ -89,7 +91,14 @@ export default function SnapshotsPage() {
     } finally {
       setIsUploading(false);
     }
-  }, [file, history]);
+  }, [file, isUploading, history]);
+
+  /** Return the upload panel to a clean state for a second snapshot. */
+  const resetUpload = useCallback(() => {
+    setFile(null);
+    setUploadError(null);
+    setCreatedId(null);
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -129,13 +138,18 @@ export default function SnapshotsPage() {
                 </p>
                 <Mono className="text-ink-fg">{createdId}</Mono>
               </div>
-              <Button
-                variant="steel"
-                size="sm"
-                onClick={() => router.push(`/snapshot/${createdId}`)}
-              >
-                View Snapshot
-              </Button>
+              <div className="flex shrink-0 flex-wrap items-center gap-2">
+                <Button
+                  variant="steel"
+                  size="sm"
+                  onClick={() => router.push(`/snapshot/${createdId}`)}
+                >
+                  View Snapshot
+                </Button>
+                <Button variant="ghost" size="sm" onClick={resetUpload}>
+                  Create another
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="space-y-4">
@@ -162,9 +176,11 @@ export default function SnapshotsPage() {
                 onDragLeave={() => setDragActive(false)}
               >
                 <input
+                  ref={zipInputRef}
                   type="file"
                   accept=".zip,application/zip"
                   data-testid="snapshot-zip-input"
+                  aria-label="Snapshot ZIP archive"
                   className="hidden"
                   onChange={(e) => {
                     handleFile(e.target.files?.[0]);
@@ -197,12 +213,7 @@ export default function SnapshotsPage() {
                     <button
                       type="button"
                       className="text-forge underline-offset-2 hover:underline"
-                      onClick={() => {
-                        const input = document.querySelector<HTMLInputElement>(
-                          "[data-testid='snapshot-zip-input']",
-                        );
-                        input?.click();
-                      }}
+                      onClick={() => zipInputRef.current?.click()}
                     >
                       browse
                     </button>
@@ -211,23 +222,44 @@ export default function SnapshotsPage() {
               </div>
               {uploadError && (
                 <div
+                  id="snapshot-upload-error"
                   role="alert"
-                  className="flex items-center gap-2 rounded border border-rose-500/25 bg-rose-500/5 px-3 py-2"
+                  className="flex flex-wrap items-start gap-2 rounded border border-rose-500/25 bg-rose-500/5 px-3 py-2"
                 >
-                  <AlertTriangle size={12} className="shrink-0 text-rose-400" />
-                  <p className="text-xs text-rose-400">{uploadError.message}</p>
+                  <AlertTriangle
+                    size={12}
+                    aria-hidden="true"
+                    className="mt-0.5 shrink-0 text-rose-400"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs text-rose-400">{uploadError.message}</p>
+                    <p className="mt-0.5 text-[10px] text-ink-subtle">
+                      {
+                        describeApiError(uploadError, {
+                          resource: "snapshot",
+                          endpoint: "POST /v1/snapshot",
+                        }).description
+                      }
+                    </p>
+                  </div>
                 </div>
               )}
-              <Button
-                variant="forge"
-                size="sm"
-                icon={<Upload size={13} />}
-                onClick={() => void handleUpload()}
-                loading={isUploading}
-                disabled={!file || isUploading}
-              >
-                Create Snapshot
-              </Button>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  variant="forge"
+                  size="sm"
+                  icon={<Upload size={13} />}
+                  onClick={() => void handleUpload()}
+                  loading={isUploading}
+                  disabled={!file || isUploading}
+                  aria-describedby={uploadError ? "snapshot-upload-error" : undefined}
+                >
+                  Create Snapshot
+                </Button>
+                <p className="font-mono text-[10px] text-ink-subtle">
+                  .zip only · max {MAX_ARCHIVE_LABEL}
+                </p>
+              </div>
             </div>
           )}
         </Card>
@@ -326,7 +358,12 @@ export default function SnapshotsPage() {
       ) : history.error ? (
         <ErrorState
           title="Unable to load snapshots"
-          description="GET /v1/project/history failed."
+          description={
+            describeApiError(history.error, {
+              resource: "snapshot history",
+              endpoint: "GET /v1/project/history",
+            }).description
+          }
           error={history.error}
           onRetry={() => void history.refetch()}
         />
@@ -370,19 +407,13 @@ function SnapshotRow({
   onClick: () => void;
 }) {
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={onClick}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onClick();
-        }
-      }}
-      aria-label={`View snapshot ${item.snapshotId}`}
-      className="group flex w-full cursor-pointer flex-wrap items-center gap-3 rounded border border-transparent px-3 py-2 text-left transition-colors hover:border-ink-border/40 hover:bg-ink-1/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-forge"
-    >
+    /*
+     * The row wrapper is a plain container: the navigation affordance is a real
+     * <button> that spans the row, and the copy control sits beside it rather
+     * than nested inside it. Nesting one button inside another is invalid HTML
+     * and makes both unreliable for keyboard and screen-reader users.
+     */
+    <div className="group relative flex flex-wrap items-center gap-3 rounded border border-transparent px-3 py-2 transition-colors hover:border-ink-border/40 hover:bg-ink-1/50 focus-within:border-forge/40">
       <span
         aria-hidden="true"
         className={[
@@ -394,15 +425,22 @@ function SnapshotRow({
       >
         <FolderArchive size={13} />
       </span>
+
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          <Mono className="text-ink-fg group-hover:text-forge">
-            {shortId(item.snapshotId, 16)}
-          </Mono>
-          <span
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => e.stopPropagation()}
+          {/* Stretched link target — covers the row without wrapping the copy button. */}
+          <button
+            type="button"
+            onClick={onClick}
+            aria-label={`View snapshot ${item.snapshotId}`}
+            className="text-left after:absolute after:inset-0 after:content-[''] focus-visible:outline-none"
           >
+            <Mono className="text-ink-fg group-hover:text-forge">
+              {shortId(item.snapshotId, 16)}
+            </Mono>
+          </button>
+          {/* Raised above the stretched hit area so it stays clickable. */}
+          <span className="relative z-10">
             <CopyButton value={item.snapshotId} label="Copy snapshot ID" />
           </span>
           {item.pipelineId && (
@@ -415,6 +453,7 @@ function SnapshotRow({
           {formatDateTime(item.createdAt)} · {item.fileCount} files
         </p>
       </div>
+
       <div className="flex shrink-0 items-center gap-2">
         {item.verificationStatus && (
           <StatusBadge
@@ -426,6 +465,7 @@ function SnapshotRow({
         )}
         <ChevronRight
           size={12}
+          aria-hidden="true"
           className="text-ink-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-forge"
         />
       </div>

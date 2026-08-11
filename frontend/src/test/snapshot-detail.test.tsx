@@ -110,7 +110,7 @@ describe("Snapshot detail", () => {
     seedSnapshot();
     renderDetail();
 
-    fireEvent.click(await screen.findByRole("button", { name: /Intelligence/ }));
+    fireEvent.click(await screen.findByRole("tab", { name: /Intelligence/ }));
 
     expect(await screen.findByTestId("intelligence-section")).toBeInTheDocument();
     expect(screen.getByText("Churn Summary")).toBeInTheDocument();
@@ -126,7 +126,7 @@ describe("Snapshot detail", () => {
     });
     renderDetail();
 
-    fireEvent.click(await screen.findByRole("button", { name: /Intelligence/ }));
+    fireEvent.click(await screen.findByRole("tab", { name: /Intelligence/ }));
 
     expect(
       await screen.findByText("Not Detected"),
@@ -141,7 +141,7 @@ describe("Snapshot detail", () => {
     getSnapshotIntelligenceMock.mockRejectedValue(new Error("intel failed"));
     renderDetail();
 
-    fireEvent.click(await screen.findByRole("button", { name: /Intelligence/ }));
+    fireEvent.click(await screen.findByRole("tab", { name: /Intelligence/ }));
 
     expect(
       await screen.findByText("Unable to load snapshot intelligence"),

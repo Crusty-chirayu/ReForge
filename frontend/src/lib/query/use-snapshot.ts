@@ -4,6 +4,7 @@ import {
   getSnapshot,
   getSnapshotIntelligence,
 } from "@/lib/api/client";
+import { retryPolicy } from "@/lib/utils/api-error";
 import { queryKeys } from "./keys";
 
 /** GET /v1/snapshot/:snapshotId — full project snapshot. */
@@ -12,7 +13,7 @@ export function useSnapshot(snapshotId: string) {
     queryKey: queryKeys.snapshot(snapshotId),
     queryFn: () => getSnapshot(snapshotId),
     enabled: Boolean(snapshotId),
-    retry: 1,
+    retry: retryPolicy,
   });
 }
 
@@ -22,7 +23,7 @@ export function useSnapshotIntelligence(snapshotId: string, historyLimit = 10) {
     queryKey: queryKeys.snapshotIntelligence(snapshotId, historyLimit),
     queryFn: () => getSnapshotIntelligence(snapshotId, historyLimit),
     enabled: Boolean(snapshotId),
-    retry: 1,
+    retry: retryPolicy,
   });
 }
 
@@ -32,6 +33,6 @@ export function useSnapshotCompare(beforeId: string, afterId: string) {
     queryKey: queryKeys.snapshotCompare(beforeId, afterId),
     queryFn: () => compareSnapshots(beforeId, afterId),
     enabled: Boolean(beforeId && afterId),
-    retry: 1,
+    retry: retryPolicy,
   });
 }

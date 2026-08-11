@@ -75,14 +75,52 @@ function errorMessage(
   return fallback;
 }
 
-async function parseBody<T>(response: Response): Promise<T | null> {
-  const text = await response.text();
-  if (!text) return null;
+interface ParsedBody<T> {
+  value: T | null;
+  /** True when a non-empty payload could not be parsed as JSON. */
+  malformed: boolean;
+}
+
+async function parseBody<T>(response: Response): Promise<ParsedBody<T>> {
+  let text: string;
   try {
-    return JSON.parse(text) as T;
+    text = await response.text();
   } catch {
-    return null;
+    // The stream failed mid-read (connection dropped, navigation, abort).
+    return { value: null, malformed: true };
   }
+
+  if (!text) return { value: null, malformed: false };
+
+  try {
+    return { value: JSON.parse(text) as T, malformed: false };
+  } catch {
+    return { value: null, malformed: true };
+  }
+}
+
+/**
+ * Convert a non-OK response into an ApiError, preferring the backend's own
+ * `{ error }` message so the console never paraphrases the server.
+ */
+function toApiError(response: Response, body: unknown): ApiError {
+  return new ApiError(
+    errorMessage(response.status, body, `Request failed (${response.status})`),
+    response.status,
+    body,
+  );
+}
+
+/**
+ * Raised when the backend answered 2xx but the payload was not usable JSON —
+ * typically a proxy or gateway returning HTML in front of the real service.
+ * Surfaced as a distinct error so the UI never renders a half-empty success.
+ */
+function malformedResponseError(path: string): ApiError {
+  return new ApiError(
+    `The backend returned a response that could not be parsed as JSON (${path}).`,
+    0,
+  );
 }
 
 /** JSON request/response wrapper. */
@@ -100,17 +138,12 @@ async function request<T>(
     credentials: "same-origin",
   });
 
-  const body = await parseBody<T | ErrorResponse>(response);
+  const { value, malformed } = await parseBody<T | ErrorResponse>(response);
 
-  if (!response.ok) {
-    throw new ApiError(
-      errorMessage(response.status, body, `Request failed (${response.status})`),
-      response.status,
-      body,
-    );
-  }
+  if (!response.ok) throw toApiError(response, value);
+  if (malformed) throw malformedResponseError(path);
 
-  return body as T;
+  return value as T;
 }
 
 /** Multipart request/response wrapper. Content-Type is left to the browser. */
@@ -126,17 +159,12 @@ async function multipart<T>(
     signal,
   });
 
-  const body = await parseBody<T | ErrorResponse>(response);
+  const { value, malformed } = await parseBody<T | ErrorResponse>(response);
 
-  if (!response.ok) {
-    throw new ApiError(
-      errorMessage(response.status, body, `Request failed (${response.status})`),
-      response.status,
-      body,
-    );
-  }
+  if (!response.ok) throw toApiError(response, value);
+  if (malformed) throw malformedResponseError(path);
 
-  return body as T;
+  return value as T;
 }
 
 // ── Health ────────────────────────────────────────────────────────────────────

@@ -20,6 +20,8 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError, runPipeline } from "@/lib/api";
 import { formatBytes } from "@/lib/utils/format";
+import { MAX_ARCHIVE_LABEL, validateArchive } from "@/lib/utils/archive";
+import { describeApiError } from "@/lib/utils/api-error";
 
 const SAFETY_FACTS = [
   {
@@ -70,6 +72,9 @@ function isAbortError(err: unknown): boolean {
   return err instanceof DOMException && err.name === "AbortError";
 }
 
+/** Id linking the submission error to the controls that produced it. */
+const PIPELINE_ERROR_ID = "pipeline-submit-error";
+
 export default function PipelineNewPage() {
   const router = useRouter();
 
@@ -95,8 +100,13 @@ export default function PipelineNewPage() {
 
   const handleFile = useCallback((candidate: File | null | undefined) => {
     if (!candidate) return;
-    if (!candidate.name.toLowerCase().endsWith(".zip")) {
-      setError(new Error("Only .zip archives are accepted for pipeline execution."));
+    const problem = validateArchive(candidate, {
+      extensionMessage:
+        "Only .zip archives are accepted for pipeline execution.",
+    });
+    if (problem) {
+      setArchive(null);
+      setError(new Error(problem));
       return;
     }
     setArchive(candidate);
@@ -111,6 +121,9 @@ export default function PipelineNewPage() {
     (mode === "proposal" || confirmed);
 
   const handleSubmit = useCallback(async () => {
+    // A pipeline run is expensive and side-effecting: never allow a second
+    // submission while one is already in flight.
+    if (isSubmitting) return;
     if (!archive) return;
     if (!goal.trim()) return;
     if (mode === "execution" && !confirmed) return;
@@ -150,7 +163,7 @@ export default function PipelineNewPage() {
     } finally {
       abortRef.current = null;
     }
-  }, [archive, goal, approved, allowDelete, verify, confirmed, mode, router]);
+  }, [archive, goal, approved, allowDelete, verify, confirmed, mode, isSubmitting, router]);
 
   const reset = useCallback(() => {
     abortRef.current?.abort();
@@ -270,7 +283,7 @@ export default function PipelineNewPage() {
                       </button>
                     </p>
                     <p className="text-xs text-ink-muted">
-                      Accepts .zip only · Maximum 200 MB
+                      Accepts .zip only · Maximum {MAX_ARCHIVE_LABEL}
                     </p>
                   </>
                 )}
@@ -418,13 +431,14 @@ export default function PipelineNewPage() {
               )}
 
               {error && (
-                <div className="mt-4">
+                <div className="mt-4" id={PIPELINE_ERROR_ID}>
                   <ErrorState
                     title="Pipeline submission failed"
                     description={
-                      error instanceof ApiError
-                        ? `Backend rejected the request (${error.status}).`
-                        : "The pipeline could not be submitted."
+                      describeApiError(error, {
+                        resource: "pipeline",
+                        endpoint: "POST /v1/pipeline",
+                      }).description
                     }
                     error={error}
                     onRetry={() => void handleSubmit()}
@@ -445,6 +459,8 @@ export default function PipelineNewPage() {
                   }
                   onClick={() => void handleSubmit()}
                   disabled={!canSubmit}
+                  loading={isSubmitting}
+                  aria-describedby={error ? PIPELINE_ERROR_ID : undefined}
                   className="w-full"
                 >
                   {mode === "execution"

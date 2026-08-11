@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
+import { describeApiError } from "@/lib/utils/api-error";
 import { Input } from "@/components/ui/input";
 import { Mono } from "@/components/ui/mono";
 import { StatusBadge, type StatusVariant } from "@/components/ui/status-badge";
@@ -176,7 +177,12 @@ export default function PlanPage() {
               {!isLoading && error && (
                 <ErrorState
                   title="Unable to generate plan"
-                  description="POST /v1/plan failed."
+                  description={
+                describeApiError(error, {
+                  resource: "plan",
+                  endpoint: "POST /v1/plan",
+                }).description
+              }
                   error={error}
                   onRetry={() => void handleGenerate(report)}
                 />
