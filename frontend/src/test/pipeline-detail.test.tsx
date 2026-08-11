@@ -345,4 +345,45 @@ describe("Pipeline detail", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("No file operations proposed.")).toBeInTheDocument();
   });
+  it("renders every plan risk when one rule reports against several modules", async () => {
+    // Regression: the pipeline receipt renders the same PlanRisk[] as /plan.
+    // PlanRisk has no id and titles repeat when one Doctor rule reports against
+    // several modules, so `key={risk.title}` collided and dropped a risk.
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    const duplicateRisk = {
+      title: "High fan-out module",
+      probability: "MEDIUM" as const,
+      impact: "HIGH" as const,
+      evidence: [],
+    };
+
+    respondWith({
+      ...mockPipelinePassed,
+      plan: {
+        ...mockPipelinePassed.plan!,
+        risks: [
+          { ...duplicateRisk, mitigation: "Split Scene.tsx into focused modules." },
+          { ...duplicateRisk, mitigation: "Split MainContainer.tsx into focused modules." },
+        ],
+      },
+    });
+    renderDetail();
+
+    // Both risks survive, each with its own mitigation text.
+    await vi.waitFor(() =>
+      expect(screen.getAllByText(/High fan-out module/)).toHaveLength(2),
+    );
+    expect(screen.getByText(/Split Scene\.tsx/)).toBeInTheDocument();
+    expect(screen.getByText(/Split MainContainer\.tsx/)).toBeInTheDocument();
+
+    const warnings = consoleError.mock.calls
+      .map((args) => args.join(" "))
+      .filter((message) => message.includes("same key"));
+    expect(warnings).toEqual([]);
+
+    consoleError.mockRestore();
+  });
 });

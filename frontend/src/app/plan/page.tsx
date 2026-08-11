@@ -309,9 +309,17 @@ function PlanView({ plan, onNew }: { plan: Plan; onNew: () => void }) {
         <Card padding="none">
           <CardHeader title="Risks" subtitle={`${plan.risks.length} identified`} />
           <div className="space-y-2 px-4 pb-4">
-            {plan.risks.map((risk) => (
+            {/*
+              PlanRisk has no id, and risks are derived straight from Doctor
+              findings — one rule reporting against several modules yields
+              repeated titles (e.g. two "High fan-out module" risks). Keying on
+              the title alone collides. The list is rendered in backend order
+              and is never sorted or filtered client-side, so the index safely
+              disambiguates duplicates.
+            */}
+            {plan.risks.map((risk, i) => (
               <div
-                key={risk.title}
+                key={`${risk.title}-${i}`}
                 className="flex items-start gap-3 rounded border border-amber-500/20 bg-amber-500/5 p-3"
               >
                 <AlertTriangle size={14} className="mt-0.5 shrink-0 text-amber-400" />

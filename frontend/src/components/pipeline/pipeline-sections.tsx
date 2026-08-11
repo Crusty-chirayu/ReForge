@@ -270,9 +270,13 @@ export function PlanSection({ plan }: { plan: Plan }) {
         <Card padding="md">
           <CardHeader title="Risks" subtitle={`${plan.risks.length} identified`} />
           <ul className="space-y-1.5">
-            {plan.risks.map((risk) => (
+            {/*
+              Same PlanRisk list as /plan: titles repeat when one Doctor rule
+              reports against several modules, so the index disambiguates.
+            */}
+            {plan.risks.map((risk, i) => (
               <li
-                key={risk.title}
+                key={`${risk.title}-${i}`}
                 className="flex items-start gap-2 text-xs text-ink-muted"
               >
                 <AlertTriangle size={10} className="mt-0.5 shrink-0 text-amber-400" />

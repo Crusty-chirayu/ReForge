@@ -199,4 +199,65 @@ describe("Plan workflow", () => {
     const order = screen.getByText("Recommended task sequence").closest("div");
     expect(order).not.toBeNull();
   });
+  it("renders every risk when one Doctor rule reports against several modules", async () => {
+    // Regression: PlanRisk has no id, and planning.ts derives risks directly
+    // from Doctor findings — so a rule firing against several modules produces
+    // repeated titles. A real plan contained two "High fan-out module" risks,
+    // which collided on `key={risk.title}` and made React drop one.
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    reportState.value = mockAnalysisReport;
+    generatePlanMock.mockResolvedValue({
+      plan: {
+        ...mockPlan,
+        risks: [
+          {
+            title: "High fan-out module",
+            probability: "MEDIUM",
+            impact: "HIGH",
+            mitigation: "Split src/components/Character/Scene.tsx into focused modules.",
+            evidence: [
+              { file: "src/components/Character/Scene.tsx", detail: "imports 24 modules" },
+            ],
+          },
+          {
+            title: "High fan-out module",
+            probability: "MEDIUM",
+            impact: "HIGH",
+            mitigation: "Split src/components/MainContainer.tsx into focused modules.",
+            evidence: [
+              { file: "src/components/MainContainer.tsx", detail: "imports 19 modules" },
+            ],
+          },
+        ],
+      },
+    });
+    renderPlan();
+
+    typeGoal("Reduce coupling");
+    fireEvent.click(screen.getByRole("button", { name: "Generate Plan" }));
+
+    // Both risks survive — neither is deduplicated nor dropped.
+    await vi.waitFor(() =>
+      expect(screen.getAllByText("High fan-out module")).toHaveLength(2),
+    );
+
+    // Each keeps its own mitigation, proving they are separate nodes.
+    expect(
+      screen.getByText(/Split src\/components\/Character\/Scene\.tsx/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Split src\/components\/MainContainer\.tsx/),
+    ).toBeInTheDocument();
+
+    // And React raised no duplicate-key warning.
+    const warnings = consoleError.mock.calls
+      .map((args) => args.join(" "))
+      .filter((message) => message.includes("same key"));
+    expect(warnings).toEqual([]);
+
+    consoleError.mockRestore();
+  });
 });
