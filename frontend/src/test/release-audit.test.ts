@@ -15,6 +15,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { API_PATHS, apiPath, ENDPOINT_INVENTORY } from "@/lib/api/endpoints";
+import { MAX_ARCHIVE_BYTES } from "@/lib/utils/archive";
 
 const FRONTEND_ROOT = join(__dirname, "..", "..");
 const SRC = join(FRONTEND_ROOT, "src");
@@ -298,6 +299,23 @@ describe("Production configuration", () => {
     expect(config).toContain("/v1/:path*");
     expect(config).toContain("/health");
     expect(config).toContain("poweredByHeader: false");
+  });
+
+  it("buffers proxied request bodies up to the full archive limit", async () => {
+    // Regression guard. The rewrite proxy buffers request bodies in memory and
+    // defaults to 10 MB. Exceeding that does not fail loudly — Next.js forwards
+    // a truncated body, cutting the multipart stream mid-file, and the backend
+    // hangs up the socket (ECONNRESET). Any archive over 10 MB was unusable.
+    const { default: config } = (await import("../../next.config")) as {
+      default: { experimental?: { proxyClientMaxBodySize?: number | string } };
+    };
+
+    const limit = config.experimental?.proxyClientMaxBodySize;
+    expect(limit, "proxy body limit must be configured").toBeDefined();
+    // Must match the archive contract exactly, so the proxy never becomes the
+    // component that rejects an upload the backend would have accepted.
+    expect(limit).toBe(MAX_ARCHIVE_BYTES);
+    expect(limit).toBeGreaterThan(10 * 1024 * 1024);
   });
 
   it("hard-codes no absolute developer paths", () => {
