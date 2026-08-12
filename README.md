@@ -153,7 +153,7 @@ No `frontend/` directory is present in the current repository — ReForge is cur
 - Route detection supports a bounded set of common receiver patterns and literal paths; it does not execute code or infer dynamic routes.
 - Module resolution does not yet implement TypeScript path aliases, package export maps, or monorepo workspaces.
 - No UI, database, job queue, authentication, private-repository connector, security scanner, performance analyzer, LLM/RAG pipeline, or code generation exists yet.
-- Git cloning should run in an isolated worker before the service is exposed to untrusted production workloads.
+- Git operations and cloning should run in an isolated worker before the service is exposed to untrusted production workloads.
 - Doctor is static analysis only — it does not perform runtime profiling, test coverage measurement, or vulnerability-advisory lookups.
 
 ## Roadmap
