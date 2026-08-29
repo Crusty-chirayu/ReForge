@@ -1,0 +1,186 @@
+@import "tailwindcss";
+
+/* ─────────────────────────────────────────────────────────────
+   ReForge console theme — graphite/navy surfaces, forge-orange
+   primary, steel/cyan secondary. Tailwind v4 CSS-first tokens.
+   ───────────────────────────────────────────────────────────── */
+@theme {
+  /* Breakpoints — `xs` covers large phones, where 3-up numeric grids still fit */
+  --breakpoint-xs: 26rem;
+
+  /* Surfaces — graphite / navy */
+  --color-ink-0: #070b14;
+  --color-ink-1: #0d1424;
+  --color-ink-2: #141d31;
+  --color-ink-3: #1e2a44;
+  --color-ink-fg: #e6ecf7;
+  --color-ink-muted: #8fa1bd;
+  --color-ink-subtle: #55637f;
+  --color-ink-border: #1b2740;
+  --color-ink-card: #0c1322;
+  --color-ink-overlay: #04070d;
+
+  /* Primary — forge orange */
+  --color-forge: #f97316;
+  --color-forge-fg: #ffffff;
+  --color-forge-dim: #c2410c;
+  --color-forge-bright: #ff8a3d;
+
+  /* Secondary — steel cyan */
+  --color-steel: #38bdf8;
+  --color-steel-fg: #081320;
+  --color-steel-dim: #0284c7;
+  --color-steel-muted: #7dd3fc;
+
+  /* Typography */
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular,
+    Menlo, Consolas, monospace;
+
+  /* Shadows */
+  --shadow-glow-sm: 0 0 12px -3px rgb(249 115 22 / 0.35);
+  --shadow-glow: 0 0 24px -6px rgb(249 115 22 / 0.4);
+  --shadow-steel-sm: 0 0 12px -3px rgb(56 189 248 / 0.3);
+  --shadow-steel: 0 0 24px -6px rgb(56 189 248 / 0.3);
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    border-color: var(--color-ink-border);
+  }
+
+  html {
+    color-scheme: dark;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-ink-0 text-ink-fg font-sans antialiased;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background-color: rgb(249 115 22 / 0.3);
+    color: #ffffff;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-ink-overlay);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-ink-border);
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-ink-subtle);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-forge);
+    outline-offset: 2px;
+  }
+
+  code,
+  kbd,
+  pre,
+  samp {
+    font-family: var(--font-mono);
+  }
+}
+
+@layer components {
+  /* Subtle engineering grid backdrop */
+  .grid-overlay {
+    background-image: linear-gradient(
+        rgb(27 39 64 / 0.35) 1px,
+        transparent 1px
+      ),
+      linear-gradient(90deg, rgb(27 39 64 / 0.35) 1px, transparent 1px);
+    background-size: 32px 32px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 100%);
+  }
+
+  .glow-forge {
+    box-shadow: 0 0 24px -6px rgb(249 115 22 / 0.4);
+  }
+  .glow-forge-sm {
+    box-shadow: 0 0 12px -3px rgb(249 115 22 / 0.35);
+  }
+  .glow-steel {
+    box-shadow: 0 0 24px -6px rgb(56 189 248 / 0.3);
+  }
+  .glow-steel-sm {
+    box-shadow: 0 0 12px -3px rgb(56 189 248 / 0.3);
+  }
+
+  .border-forge-subtle {
+    border-color: rgb(249 115 22 / 0.2);
+  }
+  .border-steel-subtle {
+    border-color: rgb(56 189 248 / 0.2);
+  }
+}
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-ink-card) 25%,
+    var(--color-ink-2) 50%,
+    var(--color-ink-card) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 4px;
+}
+
+/* Status pulse for live indicators */
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.75);
+  }
+}
+
+.pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* Terminal caret blink */
+@keyframes caret-blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  50.01%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.caret-blink {
+  animation: caret-blink 1s step-end infinite;
+}
