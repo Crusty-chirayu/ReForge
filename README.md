@@ -330,7 +330,7 @@ If you're an AI agent picking this repo up:
 
 ## 📄 License
 
-No license file was identified in the repository's top-level listing at the time this README was written. **Confirm the current repository state before treating this project as licensed for reuse.**
+Not licensed till date (Will be done soon during the Continuation starts) **
 
 <br/>
 
