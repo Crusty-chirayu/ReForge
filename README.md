@@ -1,122 +1,201 @@
-# ReForge AI
+<div align="center">
 
-**Evidence-first software project analysis platform.**
+<img src="https://capsule-render.vercel.app/api?type=venom&color=0:0f2027,50:203a43,100:2c5364&height=230&section=header&text=ReForge%20AI&fontSize=68&fontColor=00ff9c&animation=twinkling&fontAlignY=38&desc=Evidence-First%20Software%20Project%20Analysis&descAlignY=58&descSize=18&descColor=8fffc7" width="100%"/>
 
-ReForge ingests a software project, runs bounded deterministic static analysis over it, and returns a machine-readable, evidence-backed report. It is not a chatbot wrapper around an LLM — deterministic findings (structure, dependencies, risks, health scoring) are produced entirely without a language model. An optional, provider-agnostic AI layer ("Project Brain") sits on top of those deterministic facts to answer questions, and it is explicitly marked as inference rather than as a source of ground truth.
+<a href="https://github.com/Crusty-chirayu/ReForge">
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=20&pause=1200&color=00FF9C&center=true&vCenter=true&width=750&lines=%24+reforge+analyze+.%2Fproject;%E2%86%92+parsing+%E2%80%A6+extracting+dependencies+%E2%80%A6+scoring+risk;%E2%86%92+report+generated+%E2%80%94+every+finding+traced+to+a+file;Not+a+chatbot+wrapper.+Deterministic+first%2C+AI+second." alt="Typing SVG" />
+</a>
 
----
+<br/>
 
-## Table of Contents
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Fastify](https://img.shields.io/badge/Fastify-000000?style=for-the-badge&logo=fastify&logoColor=white)
+![pnpm](https://img.shields.io/badge/pnpm-workspace-F69220?style=for-the-badge&logo=pnpm&logoColor=white)
+![Stars](https://img.shields.io/github/stars/Crusty-chirayu/ReForge?style=for-the-badge&color=00ff9c&labelColor=0d1117)
+![Commits](https://img.shields.io/github/commit-activity/y/Crusty-chirayu/ReForge?style=for-the-badge&color=2c5364&labelColor=0d1117)
+![Status](https://img.shields.io/badge/pace-active%20%7C%20slower%20while%20juggling%20other%20work-yellow?style=for-the-badge&labelColor=0d1117)
 
-- [Overview](#overview)
-- [Current Phase](#current-phase)
-- [Current Capabilities](#current-capabilities)
-- [Architecture](#architecture)
-- [AI vs. Deterministic Analysis](#ai-vs-deterministic-analysis)
-- [Install, Run, and Test](#install-run-and-test)
-- [API Endpoints](#api-endpoints)
-- [Project Structure](#project-structure)
-- [Limitations](#limitations)
-- [Roadmap](#roadmap)
-- [AI Agent Handoff](#ai-agent-handoff)
-- [License](#license)
+</div>
 
----
+<br/>
 
-## Overview
+> **TL;DR** — ReForge ingests a codebase, runs bounded deterministic static analysis on it (structure, dependencies, risk, health), and hands back a machine-readable, evidence-backed report. An optional AI layer can answer questions *on top of* that report — but it's labeled inference, never treated as ground truth. No LLM is in the loop for the facts.
 
-Understanding an unfamiliar codebase — its structure, dependencies, risk areas, and the safe blast radius of a change — is a problem generic AI coding assistants handle poorly: they summarize code in natural language without grounding claims in verifiable, file-level evidence, and they don't separate "this is a static fact about the code" from "this is a plausible-sounding inference."
+<br/>
 
-ReForge takes a different approach. It performs bounded, deterministic static analysis first — parsing, dependency extraction, route detection, risk indicators — and preserves the evidence (file paths, structural facts) behind every finding. An AI layer is available on top of that deterministic base to answer natural-language questions, but it operates on the deterministic report as its source of truth and is not permitted to substitute for it.
+## 🧭 Table of Contents
 
-## Current Phase
+- [Why ReForge Exists](#-why-reforge-exists)
+- [Deterministic vs. AI — the Core Design Bet](#%EF%B8%8F-deterministic-vs-ai--the-core-design-bet)
+- [Current Capabilities](#-current-capabilities)
+- [Architecture](#-architecture)
+- [Example: What a Report Looks Like](#-example-what-a-report-looks-like)
+- [API Surface](#-api-surface)
+- [Install, Run, Test](#-install-run-test)
+- [Project Structure](#-project-structure)
+- [Build Status & Roadmap](#-build-status--roadmap)
+- [Known Limitations (stated plainly)](#-known-limitations-stated-plainly)
+- [AI Agent Handoff Protocol](#-ai-agent-handoff-protocol)
+- [Maintainer](#-maintainer)
+- [License](#-license)
 
-**Phase 12 — Persistent Project / Workspace Intelligence** is complete. This phase adds deterministic historical snapshot comparison, file change frequency rankings, project churn metrics, evidence-grounded architecture drift detection, and project history timeline queries.
+<br/>
 
-## Current Capabilities
+## 💡 Why ReForge Exists
 
-- Ingest a public HTTPS GitHub repository or a ZIP archive. A local-filesystem-path ingestion endpoint exists but is disabled by default — it must be explicitly enabled for development use.
-- Safely isolate temporary workspaces: reject ZIP path traversal and symbolic-link entries, and enforce limits on archive size, extraction size, and entry count.
-- Scan relevant project files while ignoring `.git`, `node_modules`, `dist`, `build`, `coverage`, `.next`, `.cache`, `vendor`, binaries, and oversized text files.
-- Detect languages, frameworks, manifest dependencies, entry points, licenses, copyright notices, and basic evidence-backed risks.
-- Build a **Project X-Ray** model for TypeScript, JavaScript, and JSON: classified files, line/file metrics, AST-derived modules and symbols, imports/exports, resolved internal relationships, external imports, and production/development/peer dependencies.
-- Detect common Fastify/Express-style route calls with literal paths, plus supported database and authentication technologies when project evidence exists.
-- Preserve provenance and return evidence for important findings. Environment files are reported only as metadata — their values are never returned.
-- Produce **Project Doctor** findings for selected large-file/module, duplicate-import, coupling/cycle, missing-test, dependency-count, and hardcoded-secret indicators, each with remediation guidance and a heuristic health score.
-- Provide a provider-agnostic, stateless **Project Brain** query foundation. AI output is explicitly marked as inference and cannot replace deterministic facts.
-- Generate deterministic plans with priorities, dependencies, affected modules, risks, acceptance criteria, and verification guidance (`POST /v1/plan`).
-- Ingest a trusted ZIP, generate a server-controlled snapshot, re-hash files, apply approved patches inside a disposable workspace, return an `ExecutionReceipt`, and dispose of the workspace cleanly (`POST /v1/execute`).
-- Run an end-to-end autonomous pipeline unifying ingestion, X-Ray, Doctor, planning, impact analysis, patch generation, isolated execution, server-derived verification, and receipts (`POST /v1/pipeline`).
-- Persist pipeline executions, snapshots, and lifecycle audit events in `.reforge/store/`, with history listing and receipt/snapshot query endpoints.
-- Compute deterministic snapshot comparisons, change frequency, churn, architecture drift, and project history.
+Point a generic AI coding assistant at an unfamiliar codebase and it will happily summarize it in fluent natural language — with no way to tell you which claims are verified facts and which are plausible-sounding guesses. That gap is where bugs, bad refactors, and wasted review cycles come from.
 
-## Architecture
+ReForge inverts the order of operations: **static analysis first, AI second.** It parses the project, extracts real dependency graphs, detects routes, and scores risk — all without a language model — and keeps the file-level evidence attached to every finding. The AI layer (**Project Brain**) only ever sees that deterministic report; it can reason over it, but it can't override it.
 
-```
-HTTP API -> ingestion -> isolated workspace -> scanner -> modular analyzers -> versioned report
-```
+<br/>
 
-- **`AnalysisEngine`** orchestrates analyzers over a shared scan result.
-- The **Project X-Ray** analyzer uses the TypeScript compiler API for TypeScript/JavaScript AST analysis.
-- Static facts are kept separate from any AI inference layer by design.
-- **Project Doctor** consumes the already-built `projectModel` rather than rescanning the project. Its health score is `100 - min(100, sum(severityWeight * confidenceWeight))` — this is stated by the project as a prioritization heuristic, not an objective quality measurement.
-- **Project Brain** accepts a deterministic report plus a question at `POST /v1/brain/query`. It requires a configured AI provider; without one it returns a safe `503` and normal (non-AI) analysis remains fully available.
+## ⚖️ Deterministic vs. AI — the Core Design Bet
 
-Further detail lives in the repository's `docs/architecture.md` and `docs/decisions.md`.
-
-## AI vs. Deterministic Analysis
+<div align="center">
 
 | Capability | Deterministic Engine | AI-Assisted |
-|---|---|---|
-| Project structure / X-Ray | Yes — AST-based (TypeScript compiler API) | No |
-| Dependency analysis | Yes — manifest-derived | No |
-| Route / risk detection | Yes — pattern-based, evidence-backed | No |
-| Doctor findings & health score | Yes — heuristic, deterministic | No |
-| Planning (`/v1/plan`) | Yes — deterministic plan generation | No |
-| Brain question-answering (`/v1/brain/query`) | No | Yes — requires a configured provider; returns `503` without one; explicitly marked as inference |
+|---|:---:|:---:|
+| Project structure / X-Ray (AST-based) | ✅ | — |
+| Dependency analysis (manifest-derived) | ✅ | — |
+| Route & risk detection (pattern-based) | ✅ | — |
+| Project Doctor findings + health score | ✅ | — |
+| Deterministic planning (`/v1/plan`) | ✅ | — |
+| Natural-language Q&A (`/v1/brain/query`) | — | ✅ *(requires provider · `503` without one · marked inference)* |
 
-## Install, Run, and Test
+</div>
 
-**Package manager:** pnpm (the repository is a pnpm workspace — `pnpm-workspace.yaml` is present).
+<br/>
 
-```bash
-git clone https://github.com/Crusty-chirayu/ReForge.git
-cd ReForge
-pnpm install
-pnpm start
+## 🚀 Current Capabilities
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+**📥 Safe Ingestion**
+- Public HTTPS GitHub repo or ZIP archive
+- ZIP path-traversal & symlink rejection
+- Enforced archive/extraction size & entry limits
+- Local-path ingestion exists but is **disabled by default** — opt-in only
+
+**🔬 Static Analysis**
+- Language, framework, manifest-dependency detection
+- Entry points, licenses, copyright notices
+- Evidence-backed basic risk indicators
+- Ignores `.git`, `node_modules`, `dist`, `build`, `coverage`, `.next`, `.cache`, `vendor`, binaries, oversized files
+
+**🩻 Project X-Ray** *(TS / JS / JSON)*
+- AST-derived modules & symbols via the TypeScript compiler API
+- Imports/exports, resolved internal relationships
+- External imports + prod/dev/peer dependency split
+- Line/file metrics
+
+</td>
+<td width="50%" valign="top">
+
+**🩺 Project Doctor**
+- Large-file/module, duplicate-import, coupling/cycle, missing-test, dependency-count, hardcoded-secret indicators
+- Remediation guidance per finding
+- Heuristic health score: `100 − min(100, Σ severityWeight × confidenceWeight)`
+
+**🧠 Project Brain** *(optional)*
+- Provider-agnostic, stateless Q&A over the deterministic report
+- Explicitly labeled inference — never a source of truth
+- Safe `503` when no provider is configured
+
+**⚙️ Planning & Autonomous Pipeline**
+- Deterministic plans: priorities, dependencies, risks, acceptance criteria (`/v1/plan`)
+- Trusted-ZIP patch execution in a disposable, re-hashed workspace (`/v1/execute`)
+- End-to-end pipeline: ingest → X-Ray → Doctor → plan → patch → execute → receipt (`/v1/pipeline`)
+- Persisted snapshots, comparisons, churn, and drift detection in `.reforge/store/`
+
+</td>
+</tr>
+</table>
+
+<br/>
+
+## 🏗 Architecture
+
+```mermaid
+flowchart LR
+    A["📦 GitHub Repo / ZIP"] --> B["🔒 Isolated Ingestion<br/>traversal & symlink guards, size limits"]
+    B --> C["🧹 Bounded Scanner<br/>ignores node_modules, dist, .git, etc."]
+    C --> D["🧩 AnalysisEngine"]
+    D --> E["🩻 Project X-Ray<br/>TS Compiler API"]
+    D --> F["🔍 Phase 1 Analyzers<br/>deps · routes · risks"]
+    E --> G["📄 Versioned Report<br/>evidence attached per finding"]
+    F --> G
+    G --> H["🩺 Project Doctor<br/>health score + remediation"]
+    G --> I["🧠 Project Brain — optional<br/>⚠️ inference, not fact"]
+    G --> J["🗺️ Deterministic Planner<br/>/v1/plan"]
+    J --> K["🛠️ Isolated Executor<br/>/v1/execute"]
+    K --> L["🚀 Autonomous Pipeline<br/>/v1/pipeline → ExecutionReceipt"]
+    L --> M[("💾 .reforge/store/<br/>snapshots · history · drift")]
+
+    style A fill:#2c5364,color:#fff
+    style G fill:#0d1117,color:#00ff9c,stroke:#00ff9c
+    style I fill:#f7b731,color:#1a1b27
+    style M fill:#203a43,color:#fff
 ```
 
-The server listens on `http://127.0.0.1:3000` by default.
+`HTTP API → ingestion → isolated workspace → scanner → modular analyzers → versioned report`
 
-Type-check and test (commands as published by the project, Windows-style paths shown):
+- `AnalysisEngine` orchestrates every analyzer over one shared scan result.
+- Static facts and AI inference are **architecturally separated by design**, not just by convention.
+- Deep dives: [`docs/architecture.md`](https://github.com/Crusty-chirayu/ReForge/blob/main/docs/architecture.md) · [`docs/decisions.md`](https://github.com/Crusty-chirayu/ReForge/blob/main/docs/decisions.md)
 
-```bash
-node .\node_modules\typescript\bin\tsc --noEmit
-node .\node_modules\tsx\dist\cli.mjs --test test\*.test.ts
+<br/>
+
+## 🧪 Example: What a Report Looks Like
+
+<sub>Illustrative shape only — not captured live output. Run `/v1/analyze/repository` to see the real thing.</sub>
+
+```jsonc
+{
+  "report": {
+    "language": "TypeScript",
+    "framework": "Fastify",
+    "healthScore": 78,
+    "findings": [
+      {
+        "type": "missing-test",
+        "file": "src/xray-analyzer.ts",
+        "severity": "medium",
+        "confidence": 0.9,
+        "evidence": "No corresponding *.test.ts found under test/",
+        "remediation": "Add unit coverage for exported symbols in xray-analyzer.ts"
+      }
+    ],
+    "brain": {
+      "answer": "This module likely handles AST parsing based on its imports.",
+      "sourceType": "inference",       // ⚠️ never treated as fact
+      "groundedIn": "report.findings[*]"
+    }
+  }
+}
 ```
 
-On macOS/Linux the equivalent paths are `./node_modules/typescript/bin/tsc` and `./node_modules/tsx/dist/cli.mjs`.
+<br/>
 
-## API Endpoints
+## 🔌 API Surface
 
 | Method | Endpoint | Purpose |
 |---|---|---|
-| GET | `/health` | Service health check |
-| POST | `/v1/analyze/archive` | Analyze a multipart ZIP field named `archive` |
-| POST | `/v1/analyze/repository` | Analyze a public HTTPS GitHub repository URL |
-| POST | `/v1/snapshot` | Safely ingest a ZIP and return a compact execution snapshot |
-| POST | `/v1/execute` | Ingest a trusted ZIP, apply approved patches inside a disposable workspace, return an execution receipt |
-| POST | `/v1/execute/validate` | Validate snapshot-bound patches without applying them |
-| POST | `/v1/pipeline` | Ingest a trusted ZIP and run the end-to-end autonomous engineering pipeline |
-| GET | `/v1/pipeline/history` | List recent pipeline executions (optional `limit` query parameter) |
-| GET | `/v1/pipeline/:pipelineId` | Get the full execution receipt for a recorded pipeline execution |
-| GET | `/v1/snapshot/:snapshotId` | Get stored snapshot metadata by `snapshotId` |
-| GET | `/v1/snapshots/:beforeId/compare/:afterId` | Compare two snapshots deterministically |
-| GET | `/v1/snapshot/:snapshotId/intelligence` | Get historical intelligence, change frequency, churn, and drift |
-| GET | `/v1/project/history` | Get the historical project snapshot timeline |
-| POST | `/v1/analyze/local` | Development-only local-path analysis; requires `REFORGE_ENABLE_LOCAL_INGESTION=true` |
-
-Example requests:
+| `GET` | `/health` | Service health check |
+| `POST` | `/v1/analyze/archive` | Analyze a multipart ZIP field named `archive` |
+| `POST` | `/v1/analyze/repository` | Analyze a public HTTPS GitHub repository URL |
+| `POST` | `/v1/snapshot` | Ingest a ZIP → compact execution snapshot |
+| `POST` | `/v1/execute` | Apply approved patches inside a disposable workspace → `ExecutionReceipt` |
+| `POST` | `/v1/execute/validate` | Validate snapshot-bound patches without applying them |
+| `POST` | `/v1/pipeline` | Run the full autonomous engineering pipeline |
+| `GET` | `/v1/pipeline/history` | List recent pipeline executions (`?limit=`) |
+| `GET` | `/v1/pipeline/:pipelineId` | Full execution receipt for a recorded run |
+| `GET` | `/v1/snapshot/:snapshotId` | Stored snapshot metadata |
+| `GET` | `/v1/snapshots/:beforeId/compare/:afterId` | Deterministic snapshot comparison |
+| `GET` | `/v1/snapshot/:snapshotId/intelligence` | Change frequency, churn, architecture drift |
+| `GET` | `/v1/project/history` | Historical project snapshot timeline |
+| `POST` | `/v1/analyze/local` | 🔒 Dev-only — requires `REFORGE_ENABLE_LOCAL_INGESTION=true` |
 
 ```bash
 curl.exe -F "archive=@C:\path\project.zip" http://127.0.0.1:3000/v1/analyze/archive
@@ -126,54 +205,137 @@ Invoke-RestMethod -Method Post http://127.0.0.1:3000/v1/analyze/repository `
   -Body '{"repositoryUrl":"https://github.com/owner/repository.git"}'
 ```
 
-## Project Structure
+<br/>
+
+## ⚡ Install, Run, Test
+
+```bash
+git clone https://github.com/Crusty-chirayu/ReForge.git
+cd ReForge
+pnpm install
+pnpm start
+# → http://127.0.0.1:3000
+```
+
+```bash
+# Type-check
+node ./node_modules/typescript/bin/tsc --noEmit
+
+# Run tests
+node ./node_modules/tsx/dist/cli.mjs --test test/*.test.ts
+```
+
+<sub>Windows paths: `.\node_modules\typescript\bin\tsc`, `.\node_modules\tsx\dist\cli.mjs`</sub>
+
+<br/>
+
+## 📁 Project Structure
 
 ```
 ReForge/
 ├── src/
-│   ├── ingestion.ts       # workspace, Git, upload, and safe ZIP handling
+│   ├── ingestion.ts       # workspace, Git, upload & safe ZIP handling
 │   ├── scanner.ts         # bounded relevant-file scan
-│   ├── analyzers.ts       # Phase 1 evidence-based analyzers
-│   ├── xray-analyzer.ts   # Phase 2 Project X-Ray AST and model analysis
+│   ├── analyzers.ts       # Phase 1 — evidence-based analyzers
+│   ├── xray-analyzer.ts   # Phase 2 — Project X-Ray (AST + model)
 │   ├── engine.ts          # report orchestration
 │   └── server.ts          # Fastify transport
-├── test/                  # focused unit and fixture tests
-├── docs/                  # architecture, decisions, state, and roadmap
-├── package.json
+├── test/                  # unit + fixture tests
+├── docs/                  # architecture, decisions, state, roadmap
 ├── pnpm-workspace.yaml
 ├── tsconfig.json
-└── README.md
+└── package.json
 ```
 
-No `frontend/` directory is present in the current repository — ReForge is currently an HTTP API with no bundled UI.
+<sub>No `frontend/` yet — ReForge is currently an HTTP API with no bundled UI.</sub>
 
-## Limitations
+<br/>
 
-- Parser support is currently TypeScript/JavaScript/JSON only.
-- Route detection supports a bounded set of common receiver patterns and literal paths; it does not execute code or infer dynamic routes.
-- Module resolution does not yet implement TypeScript path aliases, package export maps, or monorepo workspaces.
-- No UI, database, job queue, authentication, private-repository connector, security scanner, performance analyzer, LLM/RAG pipeline, or code generation exists yet.
-- Git operations and cloning should run in an isolated worker before the service is exposed to untrusted production workloads.
-- Doctor is static analysis only — it does not perform runtime profiling, test coverage measurement, or vulnerability-advisory lookups.
+## 📊 Build Status & Roadmap
 
-## Roadmap
+> Development is ongoing but paced around other commitments — expect steady, not constant, progress. Check other branches for in-flight agent/pipelining work.
 
-The project's published roadmap names **Phase 3 — Project Doctor** as the next explicit milestone. This appears alongside "Phase 12" being described as the current completed phase, which is a discrepancy in the source repository's own documentation, not something introduced here — see `docs/roadmap.md` in the repository for the authoritative, up-to-date sequence before relying on this section.
+```mermaid
+timeline
+    title Confirmed Phase Progress
+    Phase 1 : Evidence-based analyzers — deps, routes, risk (shipped)
+    Phase 2 : Project X-Ray — AST modules & symbols (shipped)
+    ... : Phases 3–11 — see docs/development-state.md for the full breakdown
+    Phase 12 : Persistent project intelligence — snapshots, churn, drift (current, shipped)
+```
 
-## AI Agent Handoff
+**⚠️ Known documentation discrepancy, stated here transparently:** the repo's own docs mark Phase 12 as the current completed phase, while `docs/roadmap.md` separately names **Phase 3 — Project Doctor** as the next milestone. That's a pre-existing inconsistency in the source repo, not something introduced by this README — treat [`docs/roadmap.md`](https://github.com/Crusty-chirayu/ReForge/blob/main/docs/roadmap.md) as the source of truth to reconcile before planning new work.
 
-1. Read this README, then `docs/development-state.md`, `docs/architecture.md`, `docs/roadmap.md`, and `docs/decisions.md`.
-2. Inspect the existing source and tests before modifying anything.
-3. Do not rebuild completed phases; continue from the current Git state.
-4. Preserve the evidence-first architecture and keep static facts separate from AI inference.
+### 🔭 Where this could go next
+- [ ] Frontend / dashboard for report visualization (none exists yet)
+- [ ] Path aliases, package export maps, and monorepo-aware module resolution
+- [ ] Parser support beyond TS/JS/JSON
+- [ ] Sandboxed/isolated Git worker before exposure to untrusted production traffic
+- [ ] Security scanner + vulnerability-advisory lookups for Doctor
+- [ ] Test-coverage-aware health scoring (currently static-only)
+- [ ] Authentication layer + private-repository connector
+- [ ] Job queue for long-running analyses instead of synchronous requests
+
+<br/>
+
+## 🎯 Known Limitations (stated plainly)
+
+- Parser support: **TypeScript / JavaScript / JSON only**, for now.
+- Route detection covers a bounded set of common patterns — no dynamic-route inference, no code execution.
+- Module resolution doesn't yet handle TS path aliases, export maps, or monorepo workspaces.
+- No UI, database, job queue, auth, private-repo connector, security scanner, performance analyzer, or code generation — yet.
+- Git cloning should be sandboxed before this is exposed to untrusted production workloads.
+- Project Doctor is static-only: no runtime profiling, no coverage measurement, no advisory lookups.
+
+<br/>
+
+## 🤖 AI Agent Handoff Protocol
+
+If you're an AI agent picking this repo up:
+
+1. Read this README, then `docs/development-state.md` → `docs/architecture.md` → `docs/roadmap.md` → `docs/decisions.md`, in that order.
+2. Inspect existing source and tests before touching anything.
+3. **Do not rebuild completed phases.** Continue from current Git state.
+4. Preserve the evidence-first architecture — static facts stay separate from AI inference, always.
 5. Do not start future phases without explicit instruction.
 
-## License
+<br/>
 
-No license file was identified in the repository's top-level listing at the time this README was written. Confirm this against the current repository before treating the project as licensed for reuse.
+## 🧑‍💻 Maintainer
 
-More updates are made using Agent for Pipelining purposes. So, feel free to check other branches as well.
+<div align="center">
+<a href="https://github.com/Crusty-chirayu">
+<img src="https://github.com/Crusty-chirayu.png" width="110px;" style="border-radius:50%;" alt="Chirayu"/>
+<br/><sub><b>Chirayu</b></sub>
+</a>
+<br/>
+<sub>Owner & sole maintainer — architecture, backend, and everything between ingestion and receipt.</sub>
+<br/><br/>
+<a href="https://github.com/Crusty-chirayu"><img src="https://img.shields.io/badge/GitHub-Crusty--chirayu-181717?style=flat-square&logo=github"/></a>
+</div>
 
----
+<br/>
 
-*This README was generated from the repository's own published landing-page documentation (capabilities list, architecture description, API table, install/test commands, project structure, and limitations), not from a full line-by-line source audit. Before merging, verify each API route against `src/server.ts`, each capability claim against the relevant analyzer, and check for any environment variables or configuration not reflected here.*
+<div align="center">
+
+### ⭐ Star History
+
+<a href="https://star-history.com/#Crusty-chirayu/ReForge&Date">
+  <img src="https://api.star-history.com/svg?repos=Crusty-chirayu/ReForge&type=Date" width="500"/>
+</a>
+
+</div>
+
+<br/>
+
+## 📄 License
+
+No license file was identified in the repository's top-level listing at the time this README was written. **Confirm the current repository state before treating this project as licensed for reuse.**
+
+<br/>
+
+<div align="center">
+<img src="https://capsule-render.vercel.app/api?type=venom&color=0:2c5364,50:203a43,100:0f2027&height=120&section=footer" width="100%"/>
+
+*Evidence over eloquence.*
+</div>
