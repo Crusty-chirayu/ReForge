@@ -330,12 +330,10 @@ If you're an AI agent picking this repo up:
 
 ## 📄 License
 
-Not licensed till date (Will be done soon during the Continuation starts) **
+Not licensed till date (Will be done soon during the Continuation starts) 
 
 <br/>
-
 <div align="center">
 <img src="https://capsule-render.vercel.app/api?type=venom&color=0:2c5364,50:203a43,100:0f2027&height=120&section=footer" width="100%"/>
-
 *Evidence over eloquence.*
 </div>
