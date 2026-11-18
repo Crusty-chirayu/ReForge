@@ -11,6 +11,7 @@ import {
   saveUpload,
 } from "./ingestion.js";
 import { ProjectBrain } from "./brain.js";
+import { createLLMProvider, getProviderStatus } from "./providers/index.js";
 import { PlanningDepartment } from "./planning.js";
 import { NoveltyEngine } from "./novelty.js";
 import { analyzeImpact } from "./impact.js";
@@ -32,7 +33,7 @@ const app = Fastify({
 });
 
 const engine = new AnalysisEngine();
-const brain = new ProjectBrain();
+const brain = new ProjectBrain(createLLMProvider());
 const planner = new PlanningDepartment();
 const novelty = new NoveltyEngine();
 const builder = new ReforgeBuilder();
@@ -50,6 +51,10 @@ app.get("/health", async () => ({
   status: "ok",
   service: "reforge-analysis-engine",
 }));
+
+app.get("/v1/brain/status", async (_request, reply) => {
+  return reply.code(200).send(getProviderStatus(brain.getProvider()));
+});
 
 app.post("/v1/brain/query", async (request, reply) => {
   const body = z
@@ -218,6 +223,12 @@ app.post("/v1/build", async (request, reply) => {
   };
 });
 
+function sanitizeErrorMessage(message: string): string {
+  return message.replace(/([a-zA-Z]:\\[^\s"':;]+|\/(?:home|Users|var|tmp|etc)\/[^\s"':;]+)/g, (full) => {
+    return path.basename(full);
+  });
+}
+
 /*
  * Phase 9B
  *
@@ -242,7 +253,8 @@ app.post("/v1/execute", async (request, reply) => {
   const workspace = await createWorkspace();
 
   try {
-    let archivePart: Awaited<ReturnType<typeof request.file>> | undefined;
+    let archiveSavedPath: string | undefined;
+    let archiveFilename: string | undefined;
     let executionPayload: unknown;
 
     /*
@@ -265,7 +277,7 @@ app.post("/v1/execute", async (request, reply) => {
             });
         }
 
-        if (!part.filename.toLowerCase().endsWith(".zip")) {
+        if (!part.filename || !part.filename.toLowerCase().endsWith(".zip")) {
           part.file.resume();
           return reply
             .code(400)
@@ -274,7 +286,7 @@ app.post("/v1/execute", async (request, reply) => {
             });
         }
 
-        if (archivePart) {
+        if (archiveSavedPath) {
           part.file.resume();
           return reply
             .code(400)
@@ -283,27 +295,28 @@ app.post("/v1/execute", async (request, reply) => {
             });
         }
 
-        archivePart = part;
+        archiveFilename = part.filename;
+        archiveSavedPath = await saveUpload(part.file, workspace.root);
       } else {
         if (part.fieldname === "request") {
           try {
             if (typeof part.value !== "string") {
-  return reply
-    .code(400)
-    .send({
-      error: "The 'request' field must contain a JSON string.",
-    });
-}
+              return reply
+                .code(400)
+                .send({
+                  error: "The 'request' field must contain a JSON string.",
+                });
+            }
 
-try {
-  executionPayload = JSON.parse(part.value);
-} catch {
-  return reply
-    .code(400)
-    .send({
-      error: "The 'request' field must contain valid JSON.",
-    });
-}
+            try {
+              executionPayload = JSON.parse(part.value);
+            } catch {
+              return reply
+                .code(400)
+                .send({
+                  error: "The 'request' field must contain valid JSON.",
+                });
+            }
           } catch {
             return reply
               .code(400)
@@ -315,7 +328,7 @@ try {
       }
     }
 
-    if (!archivePart) {
+    if (!archiveSavedPath || !archiveFilename) {
       return reply
         .code(400)
         .send({
@@ -376,14 +389,6 @@ try {
     }
 
     /*
-     * Store the uploaded archive inside the server-controlled workspace.
-     */
-    const archive = await saveUpload(
-      archivePart.file,
-      workspace.root,
-    );
-
-    /*
      * Extract using the existing safe ZIP boundary.
      *
      * This preserves:
@@ -399,7 +404,7 @@ try {
     );
 
     await extractZipSafely(
-      archive,
+      archiveSavedPath,
       project,
     );
 
@@ -410,7 +415,7 @@ try {
       project,
       {
         kind: "archive",
-        reference: archivePart.filename,
+        reference: archiveFilename,
       },
     );
 
@@ -432,7 +437,10 @@ try {
      */
     const executionRequest: ExecutionRequest = {
       approved: parsedRequest.data.approved,
-      build: parsedRequest.data.build,
+      build: {
+        ...parsedRequest.data.build,
+        sourceSnapshotId: parsedRequest.data.build?.sourceSnapshotId ?? snapshot.snapshotId,
+      },
       patches: parsedRequest.data.patches,
       allowDelete: parsedRequest.data.allowDelete,
       verify: parsedRequest.data.verify,
@@ -483,7 +491,7 @@ try {
       .send({
         error:
           error instanceof Error
-            ? error.message
+            ? sanitizeErrorMessage(error.message)
             : "Execution failed",
       });
   }
@@ -506,7 +514,8 @@ app.post("/v1/pipeline", async (request, reply) => {
   const workspace = await createWorkspace();
 
   try {
-    let archivePart: Awaited<ReturnType<typeof request.file>> | undefined;
+    let archiveSavedPath: string | undefined;
+    let archiveFilename: string | undefined;
     let pipelinePayload: unknown;
 
     for await (const part of request.parts()) {
@@ -518,21 +527,22 @@ app.post("/v1/pipeline", async (request, reply) => {
           });
         }
 
-        if (!part.filename.toLowerCase().endsWith(".zip")) {
+        if (!part.filename || !part.filename.toLowerCase().endsWith(".zip")) {
           part.file.resume();
           return reply.code(400).send({
             error: "Only .zip archives are accepted for pipeline execution.",
           });
         }
 
-        if (archivePart) {
+        if (archiveSavedPath) {
           part.file.resume();
           return reply.code(400).send({
             error: "Only one pipeline execution archive is allowed.",
           });
         }
 
-        archivePart = part;
+        archiveFilename = part.filename;
+        archiveSavedPath = await saveUpload(part.file, workspace.root);
       } else {
         if (part.fieldname === "request") {
           if (typeof part.value !== "string") {
@@ -552,7 +562,7 @@ app.post("/v1/pipeline", async (request, reply) => {
       }
     }
 
-    if (!archivePart) {
+    if (!archiveSavedPath || !archiveFilename) {
       return reply.code(400).send({
         error: "Expected a multipart .zip field named 'archive'.",
       });
@@ -596,16 +606,15 @@ app.post("/v1/pipeline", async (request, reply) => {
       });
     }
 
-    const archive = await saveUpload(archivePart.file, workspace.root);
     const project = path.join(workspace.root, "project");
-    await extractZipSafely(archive, project);
+    await extractZipSafely(archiveSavedPath, project);
 
     let cleanupStatus: "SUCCESS" | "FAILED" = "SUCCESS";
     let result;
     try {
       result = await runPipeline(project, parsedRequest.data, {
         kind: "archive",
-        reference: archivePart.filename,
+        reference: archiveFilename,
       });
     } finally {
       try {
@@ -636,7 +645,7 @@ app.post("/v1/pipeline", async (request, reply) => {
     } catch {}
 
     return reply.code(400).send({
-      error: error instanceof Error ? error.message : "Pipeline execution failed",
+      error: error instanceof Error ? sanitizeErrorMessage(error.message) : "Pipeline execution failed",
     });
   }
 });
@@ -895,7 +904,7 @@ app.post("/v1/snapshot", async (request, reply) => {
       .send({
         error:
           error instanceof Error
-            ? error.message
+            ? sanitizeErrorMessage(error.message)
             : "Snapshot creation failed",
       });
   } finally {
@@ -940,7 +949,7 @@ app.post("/v1/analyze/repository", async (request, reply) => {
       .send({
         error:
           error instanceof Error
-            ? error.message
+            ? sanitizeErrorMessage(error.message)
             : "Analysis failed",
       });
   } finally {
@@ -999,7 +1008,7 @@ app.post("/v1/analyze/archive", async (request, reply) => {
       .send({
         error:
           error instanceof Error
-            ? error.message
+            ? sanitizeErrorMessage(error.message)
             : "Analysis failed",
       });
   } finally {

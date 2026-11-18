@@ -18,11 +18,18 @@ export function useSnapshot(snapshotId: string) {
 }
 
 /** GET /v1/snapshot/:snapshotId/intelligence?historyLimit= — historical intelligence. */
-export function useSnapshotIntelligence(snapshotId: string, historyLimit = 10) {
+export function useSnapshotIntelligence(
+  snapshotId: string,
+  historyLimit = 10,
+  enabled = true,
+) {
   return useQuery({
     queryKey: queryKeys.snapshotIntelligence(snapshotId, historyLimit),
-    queryFn: () => getSnapshotIntelligence(snapshotId, historyLimit),
-    enabled: Boolean(snapshotId),
+    queryFn: async () => {
+      const res = await getSnapshotIntelligence(snapshotId, historyLimit);
+      return res ?? null;
+    },
+    enabled: Boolean(snapshotId) && enabled,
     retry: retryPolicy,
   });
 }

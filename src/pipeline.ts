@@ -14,6 +14,9 @@ import { ReforgeBuilder } from "./builder.js";
 import { createProjectSnapshot } from "./snapshot.js";
 import { executePatchesInWorkspace } from "./execution.js";
 import { StateStore } from "./state-store.js";
+import { generatePatchesForWorkspace } from "./patch-generator.js";
+import { createLLMProvider } from "./providers/index.js";
+import type { LLMProvider } from "./brain.js";
 
 const engine = new AnalysisEngine();
 const planner = new PlanningDepartment();
@@ -37,6 +40,7 @@ export async function runPipeline(
   request: PipelineRequest,
   provenanceSource: AnalysisReport["provenance"]["source"],
   customStore?: StateStore,
+  customProvider?: LLMProvider,
 ): Promise<PipelineResult> {
   const createdAt = new Date().toISOString();
   const pipelineId = randomUUID();
@@ -100,18 +104,16 @@ export async function runPipeline(
     .catch(() => {});
 
 
-  // 6. Map proposed build changes to explicit PatchOperation array
-  const patches: PatchOperation[] = build.fileChanges.map((change) => ({
-    path: change.path,
-    operation: change.operation,
-    expectedExistingHash: change.expectedHash,
-    content:
-      change.operation === "MODIFY"
-        ? "// Modified by ReForge Pipeline\n"
-        : "// Created by ReForge Pipeline\n",
-    evidence: change.evidence,
-    provenance: report.provenance,
-  }));
+  // 6. Map proposed build changes to genuine, validated PatchOperation array
+  const patches: PatchOperation[] = await generatePatchesForWorkspace(
+    projectRoot,
+    build,
+    report,
+    {
+      provider: customProvider ?? createLLMProvider(),
+      goal: request.goal,
+    },
+  );
 
   // 7. Construct ExecutionRequest
   const executionRequest: ExecutionRequest = {

@@ -65,7 +65,11 @@ export default function SnapshotDetailPage({
   const [tab, setTab] = useState<Tab>("overview");
 
   const snapshotQuery = useSnapshot(snapshotId);
-  const intelligenceQuery = useSnapshotIntelligence(snapshotId, 10);
+  const intelligenceQuery = useSnapshotIntelligence(
+    snapshotId,
+    10,
+    tab === "intelligence",
+  );
 
   if (snapshotQuery.isLoading) {
     return (

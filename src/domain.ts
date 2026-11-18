@@ -92,6 +92,8 @@ export interface DiffSummary {
   deleted: string[];
   unchanged: string[];
   failed: string[];
+  unifiedDiff?: string;
+  fileDiffs?: { path: string; diff: string }[];
 }
 export interface ExecutionReceipt {
   executionId: string;

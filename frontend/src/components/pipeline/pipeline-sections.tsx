@@ -1074,6 +1074,33 @@ export function DiffSummarySection({ diff }: { diff: DiffSummary }) {
           </div>
         </Card>
       )}
+      {diff.unifiedDiff && (
+        <Card padding="md" className="border-border/60 bg-surface-raised/40">
+          <CardHeader
+            title="Unified Code Diff"
+            subtitle="Generated patch differences applied to workspace"
+          />
+          <pre className="mt-2 max-h-96 overflow-x-auto overflow-y-auto rounded bg-ink-base/80 p-3 font-mono text-[11px] leading-relaxed">
+            {diff.unifiedDiff.split("\n").map((line, idx) => {
+              const isAdd = line.startsWith("+");
+              const isDel = line.startsWith("-");
+              const isHunk = line.startsWith("@");
+              const color = isAdd
+                ? "text-emerald-400 bg-emerald-500/10"
+                : isDel
+                  ? "text-rose-400 bg-rose-500/10"
+                  : isHunk
+                    ? "text-steel"
+                    : "text-ink-muted";
+              return (
+                <div key={idx} className={color}>
+                  {line}
+                </div>
+              );
+            })}
+          </pre>
+        </Card>
+      )}
     </section>
   );
 }

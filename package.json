@@ -8,7 +8,15 @@
     "dev": "tsx watch src/server.ts",
     "start": "tsx src/server.ts",
     "test": "tsx --test test/**/*.test.ts",
-    "check": "tsc --noEmit"
+    "test:backend": "tsx --test test/**/*.test.ts",
+    "test:frontend": "pnpm --filter reforge-frontend test",
+    "test:all": "pnpm test && pnpm --filter reforge-frontend test",
+    "test:e2e": "playwright test",
+    "check": "tsc --noEmit",
+    "check:backend": "tsc --noEmit",
+    "check:frontend": "pnpm --filter reforge-frontend typecheck",
+    "check:all": "pnpm check && pnpm --filter reforge-frontend typecheck",
+    "build:frontend": "pnpm --filter reforge-frontend build"
   },
   "dependencies": {
     "@fastify/multipart": "^9.0.3",
@@ -17,6 +25,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.1",
     "@types/node": "^22.10.1",
     "@types/yauzl": "^2.10.3",
     "tsx": "^4.19.2",

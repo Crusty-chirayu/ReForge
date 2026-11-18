@@ -71,6 +71,7 @@ describe("Snapshot detail", () => {
   beforeEach(() => {
     getSnapshotMock.mockReset();
     getSnapshotIntelligenceMock.mockReset();
+    getSnapshotIntelligenceMock.mockResolvedValue({ intelligence: mockIntelligence });
     pushMock.mockReset();
   });
 

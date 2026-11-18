@@ -3,6 +3,8 @@ node_modules/
 dist/
 .reforge/
 coverage/
+test-results/
+playwright-report/
 *.log
 
 .env

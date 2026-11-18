@@ -15,6 +15,7 @@ import type {
 } from "./domain.js";
 import { deriveVerificationPolicy } from "./verification-policy.js";
 import { runVerificationCommand } from "./verification-runner.js";
+import { createUnifiedDiff } from "./diff.js";
 
 const unsafe = (value: string) =>
   value.startsWith("/") ||
@@ -289,6 +290,7 @@ export async function executePatchesInWorkspace(
   await fs.cp(projectRoot, backupRoot, { recursive: true });
 
   const appliedOperations: OperationReceipt[] = [];
+  const fileDiffs: { path: string; diff: string }[] = [];
   let failedOperation: OperationReceipt | undefined;
   let stopExecution = false;
 
@@ -330,6 +332,10 @@ export async function executePatchesInWorkspace(
         opReceipt.result = "SUCCESS";
         appliedOperations.push(opReceipt);
         diffSummary.created.push(patch.path);
+        fileDiffs.push({
+          path: patch.path,
+          diff: createUnifiedDiff(patch.path, "", patch.content),
+        });
       } else if (patch.operation === "MODIFY") {
         let stat;
         try {
@@ -358,6 +364,10 @@ export async function executePatchesInWorkspace(
         opReceipt.result = "SUCCESS";
         appliedOperations.push(opReceipt);
         diffSummary.modified.push(patch.path);
+        fileDiffs.push({
+          path: patch.path,
+          diff: createUnifiedDiff(patch.path, currentContent.toString("utf-8"), patch.content),
+        });
       } else if (patch.operation === "RENAME") {
         if (!patch.fromPath) {
           throw new Error(`RENAME requires fromPath for ${patch.path}`);
@@ -394,6 +404,13 @@ export async function executePatchesInWorkspace(
         opReceipt.result = "SUCCESS";
         appliedOperations.push(opReceipt);
         diffSummary.renamed.push({ from: patch.fromPath, to: patch.path });
+        fileDiffs.push({
+          path: patch.path,
+          diff: createUnifiedDiff(patch.path, sourceContent.toString("utf-8"), sourceContent.toString("utf-8"), {
+            oldHeader: `a/${patch.fromPath}`,
+            newHeader: `b/${patch.path}`,
+          }),
+        });
       } else if (patch.operation === "DELETE") {
         if (!request.allowDelete) {
           throw new Error(`DELETE_APPROVAL_REQUIRED: Delete operation not authorized for ${patch.path}`);
@@ -408,8 +425,8 @@ export async function executePatchesInWorkspace(
           throw new Error(`Cannot DELETE symbolic link: ${patch.path}`);
         }
 
+        const currentContent = await fs.readFile(targetPath);
         if (patch.expectedExistingHash) {
-          const currentContent = await fs.readFile(targetPath);
           if (sha256(currentContent) !== patch.expectedExistingHash) {
             throw new Error(`STALE_PLAN: DELETE target fingerprint mismatched on disk: ${patch.path}`);
           }
@@ -421,6 +438,10 @@ export async function executePatchesInWorkspace(
         opReceipt.result = "SUCCESS";
         appliedOperations.push(opReceipt);
         diffSummary.deleted.push(patch.path);
+        fileDiffs.push({
+          path: patch.path,
+          diff: createUnifiedDiff(patch.path, currentContent.toString("utf-8"), ""),
+        });
       }
     } catch (err: any) {
       stopExecution = true;
@@ -441,6 +462,14 @@ export async function executePatchesInWorkspace(
         rollbackSucceeded = false;
       }
     }
+  }
+
+  if (!failedOperation) {
+    diffSummary.fileDiffs = fileDiffs;
+    diffSummary.unifiedDiff = fileDiffs
+      .map((f) => f.diff)
+      .filter(Boolean)
+      .join("\n");
   }
 
   // 4. CONTROLLED VERIFICATION (if requested and patch application succeeded)

@@ -35,3 +35,23 @@ The `/v1/analyze/local` endpoint is provided for local development and is disabl
 ## Execution snapshot and patch contract
 
 Phase 9A adds a compact `ProjectSnapshot` at the existing archive-ingestion boundary. It contains normalized paths, SHA-256 fingerprints, sizes, classifications, dependency metadata, and inherited source/license provenance—never file contents or secrets. Snapshot identity lets a BuildPlan identify the reviewed state. Patch operations require explicit content where needed and expected hashes for modifications. Validation rejects unsafe paths, stale fingerprints, incomplete patches, and unknown task references; it never accesses arbitrary host paths or modifies anything.
+
+## Ingestion Hardening & Stream Processing
+
+- **Multipart Stream Lifecycle**: Endpoints consuming multipart archives (`POST /v1/pipeline`, `POST /v1/execute`) consume each file stream directly during iteration rather than caching readable streams, preventing parser backpressure deadlocks under Fastify 5.
+- **Archive Safety Metering**: Ingestion streams pass through a byte-counting `Transform` stream checking against `MAX_SINGLE_FILE_BYTES` (100 MB), `MAX_EXTRACTED_BYTES` (500 MB), and `MAX_ARCHIVE_BYTES` (200 MB), rejecting zip bombs before disk exhaustion.
+- **Host Workspace Containment**: All file operations resolve within temporary workspaces; path traversal, drive letters, and null bytes are rejected.
+
+## AI Provider Integration (Project Brain)
+
+- **Native Fetch REST Providers**: Implements `GeminiProvider` and `OpenAIProvider` using native Node.js `fetch` with AbortSignal timeouts.
+- **Prompt Injection Defense**: Repository context is wrapped in `<project_context>` tags with explicit instructions preventing model persona override.
+- **Citation Filtering**: Model-returned evidence is strictly intersected with deterministic evidence; unverified citations are removed and all inferences are labeled `verified: false`.
+- **Honest Degradation**: When no API key is configured, Project Brain returns HTTP 503 rather than fabricating responses.
+
+## Builder & Code Transformation Engine
+
+- **AST Deduplication**: Uses TypeScript compiler AST traversal to identify and consolidate duplicate module import declarations (`CQ-003`).
+- **Migration Scaffolding**: Synthesizes type-safe database migration templates with reversible `up` and `down` handlers.
+- **Unified Diff Generation**: Implements Myers-style line diff algorithm producing standard POSIX / Git unified diffs (`DiffSummary.unifiedDiff`).
+- **Pre-Mutation Validation & Rollback**: Validates file hashes against the snapshot prior to mutation, captures recursive workspace backups, and rolls back atomically upon verification failure.

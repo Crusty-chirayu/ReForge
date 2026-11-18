@@ -65,9 +65,10 @@ export async function runVerificationCommand(
       timer = setTimeout(() => {
         timedOut = true;
         try {
-          child.kill("SIGKILL");
+          child.kill();
         } catch {}
       }, timeoutMs);
+      timer.unref?.();
     }
 
     child.stdout?.on("data", (chunk: Buffer) => {
