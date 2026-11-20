@@ -1,91 +1,196 @@
 @import "tailwindcss";
 
 /* ─────────────────────────────────────────────────────────────
-   ReForge console theme — graphite/navy surfaces, forge-orange
-   primary, steel/cyan secondary. Tailwind v4 CSS-first tokens.
+   ReForge — "Forge Ledger" Design System Tokens
+   Precise, calm, instrument-grade, trustworthy.
    ───────────────────────────────────────────────────────────── */
+
+:root {
+  /* LIGHT THEME (default fallback when light mode active) */
+  --bg-canvas: #F7F6F4;
+  --bg-surface: #FFFFFF;
+  --bg-raised: #FBFAF8;
+  --bg-overlay: #FFFFFF;
+  --border-subtle: #E7E4DF;
+  --border-default: #D6D2CB;
+  --border-strong: #B5B0A7;
+  --text-primary: #1A1A1C;
+  --text-secondary: #55555E;
+  --text-tertiary: #85858F;
+  --accent: #D9500F;
+  --accent-hover: #BF430A;
+  --accent-subtle: #FCEBE2;
+  --on-accent: #FFFFFF;
+
+  /* Semantic - Light */
+  --color-critical: #E5484D;
+  --color-critical-bg: rgba(229, 72, 77, 0.12);
+  --color-critical-border: rgba(229, 72, 77, 0.28);
+  --color-high: #F0803C;
+  --color-high-bg: rgba(240, 128, 60, 0.12);
+  --color-high-border: rgba(240, 128, 60, 0.28);
+  --color-medium: #C78500;
+  --color-medium-bg: rgba(199, 133, 0, 0.12);
+  --color-medium-border: rgba(199, 133, 0, 0.28);
+  --color-low: #2B6CB0;
+  --color-low-bg: rgba(43, 108, 176, 0.12);
+  --color-low-border: rgba(43, 108, 176, 0.28);
+  --color-info: #646470;
+  --color-info-bg: rgba(100, 100, 112, 0.1);
+  --color-info-border: rgba(100, 100, 112, 0.25);
+  --color-success: #278A5B;
+  --color-success-bg: rgba(39, 138, 91, 0.12);
+  --color-success-border: rgba(39, 138, 91, 0.28);
+
+  --diff-add-bg: rgba(63, 182, 122, 0.14);
+  --diff-add-text: #278A5B;
+  --diff-remove-bg: rgba(229, 72, 77, 0.14);
+  --diff-remove-text: #E5484D;
+
+  --shadow-overlay: 0 8px 24px rgba(20, 15, 10, 0.12);
+}
+
+.dark {
+  /* DARK THEME (Forge Ledger primary palette) */
+  --bg-canvas: #0E0E10;
+  --bg-surface: #151518;
+  --bg-raised: #1C1C20;
+  --bg-overlay: #232328;
+  --border-subtle: #26262B;
+  --border-default: #34343B;
+  --border-strong: #4A4A53;
+  --text-primary: #ECECEF;
+  --text-secondary: #A6A6B0;
+  --text-tertiary: #74747E;
+  --accent: #F2672A;
+  --accent-hover: #FF7A3D;
+  --accent-subtle: #2A1A12;
+  --on-accent: #0E0E10;
+
+  /* Semantic - Dark */
+  --color-critical: #E5484D;
+  --color-critical-bg: rgba(229, 72, 77, 0.15);
+  --color-critical-border: rgba(229, 72, 77, 0.32);
+  --color-high: #F0803C;
+  --color-high-bg: rgba(240, 128, 60, 0.15);
+  --color-high-border: rgba(240, 128, 60, 0.32);
+  --color-medium: #E5B93C;
+  --color-medium-bg: rgba(229, 185, 60, 0.15);
+  --color-medium-border: rgba(229, 185, 60, 0.32);
+  --color-low: #6E9BE8;
+  --color-low-bg: rgba(110, 155, 232, 0.15);
+  --color-low-border: rgba(110, 155, 232, 0.32);
+  --color-info: #8A8A96;
+  --color-info-bg: rgba(138, 138, 150, 0.12);
+  --color-info-border: rgba(138, 138, 150, 0.28);
+  --color-success: #3FB67A;
+  --color-success-bg: rgba(63, 182, 122, 0.15);
+  --color-success-border: rgba(63, 182, 122, 0.32);
+
+  --diff-add-bg: rgba(63, 182, 122, 0.14);
+  --diff-add-text: #3FB67A;
+  --diff-remove-bg: rgba(229, 72, 77, 0.14);
+  --diff-remove-text: #E5484D;
+
+  --shadow-overlay: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
 @theme {
-  /* Breakpoints — `xs` covers large phones, where 3-up numeric grids still fit */
   --breakpoint-xs: 26rem;
 
-  /* Surfaces — graphite / navy */
-  --color-ink-0: #070b14;
-  --color-ink-1: #0d1424;
-  --color-ink-2: #141d31;
-  --color-ink-3: #1e2a44;
-  --color-ink-fg: #e6ecf7;
-  --color-ink-muted: #8fa1bd;
-  --color-ink-subtle: #55637f;
-  --color-ink-border: #1b2740;
-  --color-ink-card: #0c1322;
-  --color-ink-overlay: #04070d;
+  /* Forge Ledger tokens */
+  --color-bg-canvas: var(--bg-canvas);
+  --color-bg-surface: var(--bg-surface);
+  --color-bg-raised: var(--bg-raised);
+  --color-bg-overlay: var(--bg-overlay);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-default: var(--border-default);
+  --color-border-strong: var(--border-strong);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-subtle: var(--accent-subtle);
+  --color-on-accent: var(--on-accent);
 
-  /* Primary — forge orange */
-  --color-forge: #f97316;
-  --color-forge-fg: #ffffff;
-  --color-forge-dim: #c2410c;
-  --color-forge-bright: #ff8a3d;
+  /* Semantic mapped colors */
+  --color-critical: var(--color-critical);
+  --color-high: var(--color-high);
+  --color-medium: var(--color-medium);
+  --color-low: var(--color-low);
+  --color-info: var(--color-info);
+  --color-success: var(--color-success);
 
-  /* Secondary — steel cyan */
-  --color-steel: #38bdf8;
-  --color-steel-fg: #081320;
-  --color-steel-dim: #0284c7;
-  --color-steel-muted: #7dd3fc;
+  /* Backward compatibility for ink / forge / steel tokens */
+  --color-ink-0: var(--bg-canvas);
+  --color-ink-1: var(--bg-surface);
+  --color-ink-2: var(--bg-raised);
+  --color-ink-3: var(--bg-overlay);
+  --color-ink-fg: var(--text-primary);
+  --color-ink-muted: var(--text-secondary);
+  --color-ink-subtle: var(--text-tertiary);
+  --color-ink-border: var(--border-subtle);
+  --color-ink-card: var(--bg-surface);
+  --color-ink-overlay: var(--bg-overlay);
+  --color-forge: var(--accent);
+  --color-forge-fg: var(--on-accent);
+  --color-forge-dim: var(--accent);
+  --color-forge-bright: var(--accent-hover);
+  --color-steel: var(--color-low);
+  --color-steel-fg: var(--text-primary);
+  --color-steel-dim: var(--color-low);
+  --color-steel-muted: var(--color-low);
 
-  /* Typography */
-  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto,
-    "Helvetica Neue", sans-serif;
-  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular,
-    Menlo, Consolas, monospace;
-
-  /* Shadows */
-  --shadow-glow-sm: 0 0 12px -3px rgb(249 115 22 / 0.35);
-  --shadow-glow: 0 0 24px -6px rgb(249 115 22 / 0.4);
-  --shadow-steel-sm: 0 0 12px -3px rgb(56 189 248 / 0.3);
-  --shadow-steel: 0 0 24px -6px rgb(56 189 248 / 0.3);
+  /* Fonts */
+  --font-sans: var(--font-geist-sans), "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: var(--font-geist-mono), "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 @layer base {
   *,
   *::before,
   *::after {
-    border-color: var(--color-ink-border);
+    border-color: var(--border-subtle);
   }
 
   html {
-    color-scheme: dark;
     scroll-behavior: smooth;
   }
 
   body {
-    @apply bg-ink-0 text-ink-fg font-sans antialiased;
+    background-color: var(--bg-canvas);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
   }
 
   ::selection {
-    background-color: rgb(249 115 22 / 0.3);
-    color: #ffffff;
+    background-color: var(--accent-subtle);
+    color: var(--text-primary);
   }
 
+  /* Custom scrollbar - instrument-grade */
   ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: var(--color-ink-overlay);
+    background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: var(--color-ink-border);
-    border-radius: 4px;
+    background: var(--border-default);
+    border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: var(--color-ink-subtle);
+    background: var(--border-strong);
   }
 
+  /* Focus ring - 2px accent ring + 2px offset */
   :focus-visible {
-    outline: 2px solid var(--color-forge);
+    outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
 
@@ -95,42 +200,53 @@
   samp {
     font-family: var(--font-mono);
   }
-}
 
-@layer components {
-  /* Subtle engineering grid backdrop */
-  .grid-overlay {
-    background-image: linear-gradient(
-        rgb(27 39 64 / 0.35) 1px,
-        transparent 1px
-      ),
-      linear-gradient(90deg, rgb(27 39 64 / 0.35) 1px, transparent 1px);
-    background-size: 32px 32px;
-    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 100%);
-  }
-
-  .glow-forge {
-    box-shadow: 0 0 24px -6px rgb(249 115 22 / 0.4);
-  }
-  .glow-forge-sm {
-    box-shadow: 0 0 12px -3px rgb(249 115 22 / 0.35);
-  }
-  .glow-steel {
-    box-shadow: 0 0 24px -6px rgb(56 189 248 / 0.3);
-  }
-  .glow-steel-sm {
-    box-shadow: 0 0 12px -3px rgb(56 189 248 / 0.3);
-  }
-
-  .border-forge-subtle {
-    border-color: rgb(249 115 22 / 0.2);
-  }
-  .border-steel-subtle {
-    border-color: rgb(56 189 248 / 0.2);
+  /* Tabular numbers for all numbers */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
   }
 }
 
-/* Skeleton shimmer */
+/* Typography scale per Forge Ledger spec */
+.text-caption {
+  font-size: 11px;
+  line-height: 16px;
+}
+.text-meta {
+  font-size: 12px;
+  line-height: 16px;
+}
+.text-ui-dense {
+  font-size: 13px;
+  line-height: 20px;
+}
+.text-body-dense {
+  font-size: 14px;
+  line-height: 22px;
+}
+.text-lead-dense {
+  font-size: 16px;
+  line-height: 24px;
+}
+.text-h3-dense {
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 600;
+}
+.text-h2-dense {
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.text-h1-dense {
+  font-size: 32px;
+  line-height: 40px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* Skeleton loader */
 @keyframes shimmer {
   0% {
     background-position: -200% 0;
@@ -143,16 +259,16 @@
 .skeleton {
   background: linear-gradient(
     90deg,
-    var(--color-ink-card) 25%,
-    var(--color-ink-2) 50%,
-    var(--color-ink-card) 75%
+    var(--bg-surface) 25%,
+    var(--bg-raised) 50%,
+    var(--bg-surface) 75%
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
   border-radius: 4px;
 }
 
-/* Status pulse for live indicators */
+/* Pulse animation for running indicators */
 @keyframes pulse-dot {
   0%,
   100% {
@@ -169,18 +285,24 @@
   animation: pulse-dot 2s ease-in-out infinite;
 }
 
-/* Terminal caret blink */
-@keyframes caret-blink {
-  0%,
-  50% {
-    opacity: 1;
-  }
-  50.01%,
-  100% {
-    opacity: 0;
-  }
+/* Motion tokens: 120ms (hover/press), 180ms (panels), 240ms (dialogs) */
+.transition-motion-fast {
+  transition: all 120ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.transition-motion-panel {
+  transition: all 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.transition-motion-dialog {
+  transition: all 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.caret-blink {
-  animation: caret-blink 1s step-end infinite;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

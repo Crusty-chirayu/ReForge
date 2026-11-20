@@ -8,6 +8,7 @@ import { describeApiError } from "@/lib/utils/api-error";
 import { Mono } from "@/components/ui/mono";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { StateRail, type StateRailState } from "@/components/ui/state-rail";
 import type { PipelineExecutionSummary } from "@/lib/api/types";
 import { formatDateTime, shortId } from "@/lib/utils/format";
 import {
@@ -25,6 +26,14 @@ export interface PipelineHistorySectionProps {
   onAnalyze: () => void;
 }
 
+function deriveStateRailState(item: PipelineExecutionSummary): StateRailState {
+  if (item.status === "FAILED" || item.status === "ERROR") return "failed";
+  if (item.verificationStatus === "PASSED") return "verified";
+  if (item.status === "PASSED" && item.approved) return "executed";
+  if (item.approved) return "approved";
+  return "proposed";
+}
+
 function LoadingRows() {
   return (
     <div
@@ -35,14 +44,13 @@ function LoadingRows() {
       {Array.from({ length: 4 }).map((_, i) => (
         <Skeleton
           key={i}
-          className="h-10 w-full rounded border border-ink-border/30 bg-ink-1/30"
+          className="h-10 w-full rounded-[4px] border border-border-subtle bg-bg-raised"
         />
       ))}
     </div>
   );
 }
 
-/** Pipeline execution history — real data from GET /v1/pipeline/history. */
 export function PipelineHistorySection({
   items,
   isLoading,
@@ -80,10 +88,11 @@ export function PipelineHistorySection({
           />
         ) : (
           <div className="overflow-x-auto">
-            <div className="min-w-[900px] space-y-1">
+            <div className="min-w-[920px] space-y-1">
               {/* Header */}
-              <div className="flex items-center gap-3 px-3 py-1.5 font-mono text-[9px] uppercase tracking-widest text-ink-subtle">
+              <div className="flex items-center gap-3 px-3 py-1.5 font-mono text-[9px] uppercase tracking-widest text-text-tertiary border-b border-border-subtle">
                 <span className="w-24 shrink-0">Status</span>
+                <span className="w-28 shrink-0">State Rail</span>
                 <span className="w-32 shrink-0">Pipeline</span>
                 <span className="min-w-[160px] flex-1">Goal</span>
                 <span className="w-28 shrink-0">Snapshot</span>
@@ -100,33 +109,36 @@ export function PipelineHistorySection({
                   type="button"
                   onClick={() => onNavigate(item.pipelineId)}
                   aria-label={`View pipeline ${item.pipelineId}`}
-                  className="group flex w-full items-center gap-3 rounded border border-transparent px-3 py-2 text-left transition-colors hover:border-ink-border/40 hover:bg-ink-1/50"
+                  className="group flex w-full items-center gap-3 rounded-[4px] border border-transparent px-3 py-2 text-left transition-colors hover:border-border-default hover:bg-bg-raised text-ui-dense"
                 >
                   <span className="w-24 shrink-0">
                     <StatusBadge variant={pipelineStatusVariant(item.status)} size="sm">
                       {item.status}
                     </StatusBadge>
                   </span>
-                  <Mono className="w-32 shrink-0 text-ink-fg group-hover:text-forge">
+                  <span className="w-28 shrink-0">
+                    <StateRail compact state={deriveStateRailState(item)} />
+                  </span>
+                  <Mono className="w-32 shrink-0 text-text-primary group-hover:text-accent font-medium">
                     {shortId(item.pipelineId, 12)}
                   </Mono>
-                  <span className="min-w-[160px] flex-1 truncate text-sm text-ink-fg">
+                  <span className="min-w-[160px] flex-1 truncate text-ui-dense text-text-primary">
                     {item.goal}
                   </span>
                   <span className="w-28 shrink-0">
-                    <Mono className="text-[10px] text-ink-muted">
+                    <Mono className="text-[10px] text-text-secondary">
                       {shortId(item.snapshotId, 12)}
                     </Mono>
                   </span>
                   <span
                     className={[
-                      "w-16 shrink-0 font-mono text-xs",
-                      item.approved ? "text-emerald-400" : "text-ink-subtle",
+                      "w-16 shrink-0 font-mono text-meta font-medium",
+                      item.approved ? "text-success" : "text-text-tertiary",
                     ].join(" ")}
                   >
                     {item.approved ? "YES" : "NO"}
                   </span>
-                  <span className="w-12 shrink-0 text-right font-mono text-xs text-ink-fg">
+                  <span className="w-12 shrink-0 text-right font-mono text-meta text-text-primary tabular-nums">
                     {item.appliedPatchCount}
                   </span>
                   <span className="w-24 shrink-0">
@@ -138,15 +150,15 @@ export function PipelineHistorySection({
                         {verificationLabel(item.verificationStatus)}
                       </StatusBadge>
                     ) : (
-                      <span className="text-[10px] text-ink-subtle">—</span>
+                      <span className="text-[10px] text-text-tertiary">—</span>
                     )}
                   </span>
-                  <span className="w-32 shrink-0">
-                    <span className="block text-[10px] text-ink-muted">
+                  <span className="w-32 shrink-0 font-mono">
+                    <span className="block text-[10px] text-text-secondary">
                       {formatDateTime(item.createdAt)}
                     </span>
                     {item.completedAt && (
-                      <span className="block text-[9px] text-ink-subtle">
+                      <span className="block text-[9px] text-text-tertiary">
                         done {formatDateTime(item.completedAt)}
                       </span>
                     )}
@@ -154,7 +166,7 @@ export function PipelineHistorySection({
                   <ChevronRight
                     size={12}
                     aria-hidden="true"
-                    className="w-4 shrink-0 text-ink-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-forge"
+                    className="w-4 shrink-0 text-text-tertiary transition-transform group-hover:translate-x-0.5 group-hover:text-accent"
                   />
                 </button>
               ))}

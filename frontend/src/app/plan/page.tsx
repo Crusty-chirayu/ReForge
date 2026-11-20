@@ -45,7 +45,13 @@ const riskVariant: Record<PlanRisk["probability" | "impact"], StatusVariant> = {
 
 export default function PlanPage() {
   const { setPlan: savePlan } = useWorkflow();
-  const [goal, setGoal] = useState("");
+  const [goal, setGoal] = useState(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("goal") || "";
+    }
+    return "";
+  });
   const [constraints, setConstraints] = useState("");
   const [priorities, setPriorities] = useState("");
   const [desiredTechnology, setDesiredTechnology] = useState("");

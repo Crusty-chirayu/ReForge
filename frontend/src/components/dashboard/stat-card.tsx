@@ -13,33 +13,32 @@ export interface StatCardProps {
 
 const accentClasses: Record<StatAccent, { icon: string; value: string; border: string }> = {
   forge: {
-    icon: "bg-forge/10 border-forge/20 text-forge",
-    value: "text-forge",
-    border: "border-forge/20",
+    icon: "bg-accent/10 border-accent/20 text-accent",
+    value: "text-accent",
+    border: "border-border-subtle",
   },
   steel: {
-    icon: "bg-steel/10 border-steel/20 text-steel",
-    value: "text-steel",
-    border: "border-steel/20",
+    icon: "bg-low/10 border-low/20 text-low",
+    value: "text-text-primary",
+    border: "border-border-subtle",
   },
   emerald: {
-    icon: "bg-emerald-500/10 border-emerald-500/20 text-emerald-400",
-    value: "text-emerald-400",
-    border: "border-emerald-500/20",
+    icon: "bg-success/10 border-success/20 text-success",
+    value: "text-success",
+    border: "border-border-subtle",
   },
   rose: {
-    icon: "bg-rose-500/10 border-rose-500/20 text-rose-400",
-    value: "text-rose-400",
-    border: "border-rose-500/20",
+    icon: "bg-critical/10 border-critical/20 text-critical",
+    value: "text-critical",
+    border: "border-border-subtle",
   },
   muted: {
-    icon: "bg-ink-2/60 border-ink-border/40 text-ink-muted",
-    value: "text-ink-fg",
-    border: "border-ink-border/40",
+    icon: "bg-bg-raised border-border-default text-text-secondary",
+    value: "text-text-primary",
+    border: "border-border-subtle",
   },
 };
 
-/** Compact engineering stat tile used in the overview grid. */
 export function StatCard({
   label,
   value,
@@ -55,7 +54,7 @@ export function StatCard({
     <div
       data-testid={testId}
       className={[
-        "rounded border bg-ink-card/60 px-3 py-2.5",
+        "rounded-[6px] border bg-bg-surface px-3 py-2.5 transition-colors duration-120",
         styles.border,
       ].join(" ")}
     >
@@ -63,18 +62,18 @@ export function StatCard({
         <div
           aria-hidden="true"
           className={[
-            "flex h-8 w-8 shrink-0 items-center justify-center rounded border",
+            "flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] border",
             styles.icon,
           ].join(" ")}
         >
           {icon}
         </div>
         <div className="min-w-0">
-          <p className="truncate font-mono text-[9px] uppercase tracking-widest text-ink-subtle">
+          <p className="truncate font-mono text-[9px] uppercase tracking-widest text-text-tertiary">
             {label}
           </p>
           <p
-            className={["mt-0.5 text-lg font-bold leading-tight", styles.value].join(
+            className={["mt-0.5 text-h3-dense font-mono font-semibold leading-tight tabular-nums", styles.value].join(
               " ",
             )}
           >
@@ -83,7 +82,7 @@ export function StatCard({
         </div>
       </div>
       {hint && (
-        <p className="mt-1.5 truncate text-[10px] text-ink-subtle">{hint}</p>
+        <p className="mt-1.5 truncate text-meta text-text-tertiary font-mono">{hint}</p>
       )}
       {footer && <div className="mt-2">{footer}</div>}
     </div>

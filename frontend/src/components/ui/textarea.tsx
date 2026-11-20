@@ -5,10 +5,11 @@ export interface TextareaProps
   label?: string;
   error?: string;
   hint?: string;
+  mono?: boolean;
 }
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ label, error, hint, className = "", id, ...props }, ref) => {
+  ({ label, error, hint, mono = false, className = "", id, ...props }, ref) => {
     const inputId = id ?? label?.toLowerCase().replace(/\s+/g, "-");
 
     return (
@@ -16,7 +17,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="text-xs font-medium uppercase tracking-wider text-ink-muted"
+            className="text-meta font-medium uppercase tracking-wider text-text-secondary"
           >
             {label}
           </label>
@@ -25,24 +26,25 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           ref={ref}
           id={inputId}
           className={[
-            "w-full min-h-[100px] rounded bg-ink-1 border px-3 py-2 text-sm text-ink-fg placeholder:text-ink-subtle",
-            "transition-colors duration-150 resize-y",
-            "focus:outline-none focus:ring-2 focus:ring-forge/40 focus:border-forge",
-            "disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-ink-0",
+            "w-full rounded-[4px] bg-bg-surface border p-2.5 text-ui-dense text-text-primary placeholder:text-text-tertiary",
+            "transition-colors duration-120 outline-none resize-y min-h-[80px]",
+            "focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-bg-canvas focus:border-accent",
+            "disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-bg-canvas",
+            mono ? "font-mono text-meta" : "font-sans",
             error
-              ? "border-rose-500/50 focus:ring-rose/40 focus:border-rose"
-              : "border-ink-border/60 hover:border-ink-border",
+              ? "border-critical text-critical focus:ring-critical/40 focus:border-critical"
+              : "border-border-default hover:border-border-strong",
             className,
           ].join(" ")}
           aria-invalid={error ? true : undefined}
           {...props}
         />
         {error ? (
-          <p role="alert" className="text-xs text-rose-400">
+          <p role="alert" className="text-meta text-critical">
             {error}
           </p>
         ) : hint ? (
-          <p className="text-xs text-ink-subtle">{hint}</p>
+          <p className="text-meta text-text-tertiary">{hint}</p>
         ) : null}
       </div>
     );

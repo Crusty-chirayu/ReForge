@@ -6,10 +6,14 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   hint?: string;
   icon?: ReactNode;
   iconRight?: ReactNode;
+  mono?: boolean;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, hint, icon, iconRight, className = "", id, ...props }, ref) => {
+  (
+    { label, error, hint, icon, iconRight, mono = false, className = "", id, ...props },
+    ref,
+  ) => {
     const inputId = id ?? label?.toLowerCase().replace(/\s+/g, "-");
 
     return (
@@ -17,7 +21,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="text-xs font-medium uppercase tracking-wider text-ink-muted"
+            className="text-meta font-medium uppercase tracking-wider text-text-secondary"
           >
             {label}
           </label>
@@ -26,7 +30,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           {icon && (
             <span
               aria-hidden="true"
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-subtle"
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-tertiary flex items-center justify-center pointer-events-none"
             >
               {icon}
             </span>
@@ -35,15 +39,16 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             className={[
-              "w-full h-9 rounded bg-ink-1 border px-3 text-sm text-ink-fg placeholder:text-ink-subtle",
-              "transition-colors duration-150",
-              "focus:outline-none focus:ring-2 focus:ring-forge/40 focus:border-forge",
-              "disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-ink-0",
-              icon ? "pl-9" : "",
-              iconRight ? "pr-9" : "",
+              "w-full h-8 rounded-[4px] bg-bg-surface border px-2.5 text-ui-dense text-text-primary placeholder:text-text-tertiary",
+              "transition-colors duration-120 outline-none",
+              "focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-bg-canvas focus:border-accent",
+              "disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-bg-canvas",
+              mono ? "font-mono text-meta" : "font-sans",
+              icon ? "pl-8" : "",
+              iconRight ? "pr-8" : "",
               error
-                ? "border-rose-500/50 focus:ring-rose/40 focus:border-rose"
-                : "border-ink-border/60 hover:border-ink-border",
+                ? "border-critical text-critical focus:ring-critical/40 focus:border-critical"
+                : "border-border-default hover:border-border-strong",
               className,
             ].join(" ")}
             aria-invalid={error ? true : undefined}
@@ -52,18 +57,18 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           {iconRight && (
             <span
               aria-hidden="true"
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-subtle"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-tertiary flex items-center justify-center"
             >
               {iconRight}
             </span>
           )}
         </div>
         {error ? (
-          <p role="alert" className="text-xs text-rose-400">
+          <p role="alert" className="text-meta text-critical">
             {error}
           </p>
         ) : hint ? (
-          <p className="text-xs text-ink-subtle">{hint}</p>
+          <p className="text-meta text-text-tertiary">{hint}</p>
         ) : null}
       </div>
     );

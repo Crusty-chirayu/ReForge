@@ -14,27 +14,21 @@ const paddingMap = {
   lg: "p-6",
 } as const;
 
-const glowStyles = {
-  forge: "hover:shadow-glow transition-shadow duration-300",
-  steel: "hover:shadow-steel transition-shadow duration-300",
-  none: "",
-} as const;
-
 export function Card({
   children,
   className = "",
   hover = false,
-  glow = "none",
+  glow: _glow,
   padding = "md",
   ...props
 }: CardProps) {
+  void _glow;
   return (
     <div
       className={[
-        "rounded border border-ink-border/60 bg-ink-card/80 backdrop-blur-sm",
+        "rounded-[6px] border border-border-subtle bg-bg-surface transition-colors duration-120",
         paddingMap[padding],
-        hover ? "cursor-pointer" : "",
-        glowStyles[glow],
+        hover ? "cursor-pointer hover:border-border-default hover:bg-bg-raised" : "",
         className,
       ].join(" ")}
       {...props}
@@ -60,16 +54,16 @@ export function CardHeader({
   return (
     <div
       className={[
-        "flex items-start justify-between gap-4 pb-3",
+        "flex items-start justify-between gap-4 pb-3 border-b border-border-subtle/50 mb-3",
         className,
       ].join(" ")}
     >
       <div className="min-w-0">
-        <h3 className="text-sm font-semibold tracking-tight text-ink-fg">
+        <h3 className="text-ui-dense font-semibold tracking-tight text-text-primary">
           {title}
         </h3>
         {subtitle && (
-          <p className="mt-0.5 text-xs text-ink-muted">{subtitle}</p>
+          <p className="mt-0.5 text-meta text-text-secondary">{subtitle}</p>
         )}
       </div>
       {action && <div className="shrink-0">{action}</div>}
@@ -86,7 +80,7 @@ export function CardTitle({
 }) {
   return (
     <h3
-      className={["text-sm font-semibold tracking-tight text-ink-fg", className].join(
+      className={["text-ui-dense font-semibold tracking-tight text-text-primary", className].join(
         " ",
       )}
     >

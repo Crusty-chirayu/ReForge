@@ -90,7 +90,13 @@ export default function BrainPage() {
   const router = useRouter();
   const { report, reportLoading } = useReport();
 
-  const [question, setQuestion] = useState("");
+  const [question, setQuestion] = useState(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("q") || "";
+    }
+    return "";
+  });
   const [entries, setEntries] = useState<QueryEntry[]>([]);
   const abortRef = useRef<AbortController | null>(null);
 
