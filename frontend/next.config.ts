@@ -11,7 +11,7 @@ import type { NextConfig } from "next";
  * Override the backend origin with REFORGE_BACKEND_URL when needed.
  */
 const BACKEND_ORIGIN =
-  process.env.REFORGE_BACKEND_URL ?? "http://127.0.0.1:3000";
+  process.env.REFORGE_BACKEND_URL ?? "http://127.0.0.1:3001";
 
 /**
  * Maximum request body the rewrite proxy will buffer, in bytes.
