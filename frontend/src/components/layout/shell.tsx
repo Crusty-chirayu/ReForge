@@ -149,7 +149,11 @@ export function Shell({ children }: ShellProps) {
 
       {/* Docked sidebar (lg and up) */}
       <div className="hidden lg:flex lg:shrink-0">
-        <Sidebar collapsed={collapsed} onToggleCollapsed={toggleCollapsed} />
+        <Sidebar
+          collapsed={collapsed}
+          onToggleCollapsed={toggleCollapsed}
+          onOpenSettings={() => setSettingsOpen(true)}
+        />
       </div>
 
       {/* Mobile drawer */}
@@ -167,7 +171,13 @@ export function Shell({ children }: ShellProps) {
             aria-label="Navigation"
             className="fixed inset-y-0 left-0 z-50 flex w-60 max-w-[85vw] lg:hidden"
           >
-            <Sidebar onNavigate={closeMobile} />
+            <Sidebar
+              onNavigate={closeMobile}
+              onOpenSettings={() => {
+                closeMobile();
+                setSettingsOpen(true);
+              }}
+            />
             <button
               type="button"
               onClick={closeMobile}
@@ -219,11 +229,11 @@ export function Shell({ children }: ShellProps) {
         />
 
         {/* Content */}
-        <main id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto">
+        <main id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto min-w-0">
           {isWorkbench ? (
-            <div className="h-full w-full">{children}</div>
+            <div className="h-full w-full min-w-0 overflow-x-hidden">{children}</div>
           ) : (
-            <div className="mx-auto max-w-[1440px] px-4 py-6 lg:px-6">{children}</div>
+            <div className="mx-auto max-w-[1440px] px-4 py-6 lg:px-6 min-w-0">{children}</div>
           )}
         </main>
 

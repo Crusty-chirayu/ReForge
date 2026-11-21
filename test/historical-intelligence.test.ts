@@ -140,7 +140,11 @@ test("2. Snapshot comparison HTTP API returns 200 and diff result", async () => 
     assert.equal(json.diff.created.length, 1);
     assert.equal(json.diff.modified.length, 1);
   } finally {
-    process.env.REFORGE_STORE_DIR = prevStoreDir;
+    if (prevStoreDir === undefined) {
+      delete process.env.REFORGE_STORE_DIR;
+    } else {
+      process.env.REFORGE_STORE_DIR = prevStoreDir;
+    }
     await rm(storeDir, { recursive: true, force: true });
   }
 });
@@ -165,7 +169,11 @@ test("3. Snapshot intelligence HTTP API returns 200 and intelligence report", as
     assert.ok(json.intelligence);
     assert.equal(json.intelligence.projectSnapshotId, "snap-intel-1");
   } finally {
-    process.env.REFORGE_STORE_DIR = prevStoreDir;
+    if (prevStoreDir === undefined) {
+      delete process.env.REFORGE_STORE_DIR;
+    } else {
+      process.env.REFORGE_STORE_DIR = prevStoreDir;
+    }
     await rm(storeDir, { recursive: true, force: true });
   }
 });

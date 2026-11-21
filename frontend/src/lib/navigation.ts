@@ -2,15 +2,24 @@
 // ReForge navigation registry.
 //
 // Single source of truth for every route the console exposes.
+// Follows the Forge Ledger information architecture:
+//   WORKSPACE  -> Overview
+//   ANALYZE    -> Ingest, Report
+//   UNDERSTAND -> X-Ray, Doctor, Impact
+//   ACT        -> Plan, Brain, Builder, Pipelines
+//   HISTORY    -> Snapshots, Compare
 // ─────────────────────────────────────────────────────────────────────────────
 
 import {
   Activity,
   Brain,
   Compass,
+  FileText,
   FolderArchive,
+  GitCompare,
+  Layers,
   LayoutDashboard,
-  Sparkles,
+  Stethoscope,
   Target,
   Wrench,
   Zap,
@@ -33,11 +42,11 @@ export interface NavSection {
 
 export const NAV_SECTIONS: NavSection[] = [
   {
-    title: "SYSTEM",
+    title: "WORKSPACE",
     items: [
       {
         id: "dashboard",
-        label: "Dashboard",
+        label: "Overview",
         href: "/",
         icon: LayoutDashboard,
         description: "Project timeline, pipeline history, and backend status",
@@ -45,29 +54,43 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    title: "WORKFLOW",
+    title: "ANALYZE",
     items: [
       {
         id: "analyze",
-        label: "Analyze",
+        label: "Ingest",
         href: "/analyze",
         icon: Compass,
         description: "Ingest a ZIP or repository and generate an analysis report",
-        activePrefixes: ["/analyze"],
       },
       {
-        id: "plan",
-        label: "Plan",
-        href: "/plan",
-        icon: Target,
-        description: "Turn the analysis report into a sequenced improvement plan",
+        id: "report",
+        label: "Report",
+        href: "/analyze/report",
+        icon: FileText,
+        description: "Inspect the evidence-backed project analysis report",
+        activePrefixes: ["/analyze/report"],
+      },
+    ],
+  },
+  {
+    title: "UNDERSTAND",
+    items: [
+      {
+        id: "xray",
+        label: "X-Ray",
+        href: "/xray",
+        icon: Layers,
+        description: "Interactive architectural graph, module dependencies, and coupling matrix",
+        activePrefixes: ["/xray"],
       },
       {
-        id: "novelty",
-        label: "Novelty",
-        href: "/novelty",
-        icon: Sparkles,
-        description: "Surface differentiating opportunities from the report",
+        id: "doctor",
+        label: "Doctor",
+        href: "/doctor",
+        icon: Stethoscope,
+        description: "Automated architectural triage, hygiene rules, and health scoring",
+        activePrefixes: ["/doctor"],
       },
       {
         id: "impact",
@@ -75,17 +98,40 @@ export const NAV_SECTIONS: NavSection[] = [
         href: "/impact",
         icon: Activity,
         description: "Model the blast radius of a proposed change",
+        activePrefixes: ["/impact"],
+      },
+    ],
+  },
+  {
+    title: "ACT",
+    items: [
+      {
+        id: "plan",
+        label: "Plan",
+        href: "/plan",
+        icon: Target,
+        description: "Turn the analysis report into a sequenced improvement plan",
+        activePrefixes: ["/plan"],
+      },
+      {
+        id: "brain",
+        label: "Brain",
+        href: "/brain",
+        icon: Brain,
+        description: "Ask evidence-grounded questions about the analyzed project",
+        activePrefixes: ["/brain"],
       },
       {
         id: "build",
-        label: "Build",
+        label: "Builder",
         href: "/build",
         icon: Wrench,
-        description: "Generate a reviewable patch proposal from workflow context",
+        description: "Generate and inspect patch proposals in the engineering workbench",
+        activePrefixes: ["/build"],
       },
       {
         id: "pipeline",
-        label: "Pipeline",
+        label: "Pipelines",
         href: "/pipeline",
         icon: Zap,
         description: "Run the end-to-end pipeline and inspect stored results",
@@ -94,22 +140,23 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    title: "INTELLIGENCE",
+    title: "HISTORY",
     items: [
       {
         id: "snapshots",
         label: "Snapshots",
         href: "/snapshots",
         icon: FolderArchive,
-        description: "Browse, inspect, and compare versioned project snapshots",
+        description: "Browse, inspect, and track versioned project snapshots",
         activePrefixes: ["/snapshots", "/snapshot"],
       },
       {
-        id: "brain",
-        label: "Brain",
-        href: "/brain",
-        icon: Brain,
-        description: "Ask evidence-grounded questions about the analyzed project",
+        id: "compare",
+        label: "Compare",
+        href: "/snapshot/compare",
+        icon: GitCompare,
+        description: "Deterministically compare two versioned project snapshots",
+        activePrefixes: ["/snapshot/compare"],
       },
     ],
   },
@@ -123,10 +170,23 @@ export function isNavItemActive(item: NavItem, pathname: string | null): boolean
 
   if (item.href === "/") return path === "/";
 
-  const candidates = [item.href, ...(item.activePrefixes ?? [])];
-  return candidates.some(
-    (prefix) => path === prefix || path.startsWith(`${prefix}/`),
-  );
+  // Prevent Snapshots item from capturing Snapshot Compare routes
+  if (item.id === "snapshots" && path.startsWith("/snapshot/compare")) {
+    return false;
+  }
+
+  // Prevent Ingest item from capturing Report routes
+  if (item.id === "analyze" && path.startsWith("/analyze/report")) {
+    return false;
+  }
+
+  if (item.activePrefixes && item.activePrefixes.length > 0) {
+    return item.activePrefixes.some(
+      (prefix) => path === prefix || path.startsWith(`${prefix}/`),
+    );
+  }
+
+  return path === item.href || path.startsWith(`${item.href}/`);
 }
 
 export function activeNavItem(pathname: string | null): NavItem | null {
@@ -140,7 +200,14 @@ export interface Crumb {
 
 export function breadcrumbsFor(pathname: string | null): Crumb[] {
   const path = normalize(pathname ?? "/");
-  if (path === "/") return [{ label: "Dashboard" }];
+  if (path === "/") return [{ label: "Overview" }];
+
+  if (path === "/analyze/report") {
+    return [
+      { label: "Analyze", href: "/analyze" },
+      { label: "Report" },
+    ];
+  }
 
   const owner = activeNavItem(path);
   const crumbs: Crumb[] = [];
@@ -162,8 +229,8 @@ export function breadcrumbsFor(pathname: string | null): Crumb[] {
   const segments = path.split("/").filter(Boolean);
   if (path.startsWith("/pipeline/") && segments[1]) {
     crumbs.push({ label: "Result" });
-  } else if (path.startsWith("/snapshot/compare/")) {
-    crumbs.push({ label: "Compare" });
+  } else if (path.startsWith("/snapshot/compare/") && segments.length >= 4) {
+    crumbs.push({ label: "Diff" });
   } else if (path.startsWith("/snapshot/") && segments[1]) {
     crumbs.push({ label: "Detail" });
   }
@@ -172,13 +239,13 @@ export function breadcrumbsFor(pathname: string | null): Crumb[] {
 }
 
 const KNOWN_TRAILS: Record<string, Crumb[]> = {
-  "/analyze/report": [{ label: "Report" }],
   "/pipeline/new": [{ label: "New Run" }],
+  "/novelty": [{ label: "Novelty" }],
 };
 
 export function pageTitleFor(pathname: string | null): string {
   const path = normalize(pathname ?? "/");
-  if (path === "/") return "Dashboard";
+  if (path === "/") return "Overview";
   const crumbs = breadcrumbsFor(path);
   if (crumbs.length === 0) return "ReForge";
   return crumbs.map((crumb) => crumb.label).join(" › ");

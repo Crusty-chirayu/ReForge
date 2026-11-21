@@ -42,7 +42,7 @@ export function FactInferenceBlock({
           ) : (
             <span className="inline-flex items-center gap-1 text-low font-semibold">
               <Sparkles size={12} aria-hidden="true" />
-              <span>Inference (Unverified)</span>
+              <span>Inference (unverified)</span>
             </span>
           )}
         </div>

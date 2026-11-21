@@ -25,6 +25,7 @@ export interface DiffViewerProps {
   filePath?: string;
   operation?: "CREATE" | "MODIFY" | "DELETE" | "RENAME";
   fromPath?: string;
+  showOperationBadge?: boolean;
   className?: string;
 }
 
@@ -95,6 +96,7 @@ export function DiffViewer({
   filePath,
   operation = "MODIFY",
   fromPath,
+  showOperationBadge = true,
   className = "",
 }: DiffViewerProps) {
   const [viewMode, setViewMode] = useState<"unified" | "split">("unified");
@@ -172,19 +174,21 @@ export function DiffViewer({
       {/* Header Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-subtle bg-bg-raised px-3 py-2 select-none">
         <div className="flex items-center gap-2 font-mono text-meta min-w-0">
-          <span
-            className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${
-              operation === "CREATE"
-                ? "bg-success/15 text-success"
-                : operation === "DELETE"
-                ? "bg-critical/15 text-critical"
-                : operation === "RENAME"
-                ? "bg-low/15 text-low"
-                : "bg-medium/15 text-medium"
-            }`}
-          >
-            {operation}
-          </span>
+          {showOperationBadge && (
+            <span
+              className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${
+                operation === "CREATE"
+                  ? "bg-success/15 text-success"
+                  : operation === "DELETE"
+                  ? "bg-critical/15 text-critical"
+                  : operation === "RENAME"
+                  ? "bg-low/15 text-low"
+                  : "bg-medium/15 text-medium"
+              }`}
+            >
+              {operation}
+            </span>
+          )}
 
           {operation === "RENAME" && fromPath ? (
             <div className="flex items-center gap-1 truncate text-text-secondary">

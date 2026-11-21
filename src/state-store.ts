@@ -24,10 +24,19 @@ export class StateStore {
   }
 
   public get baseDir(): string {
-    const rawDir =
-      this.customStoreDir ??
-      process.env.REFORGE_STORE_DIR ??
-      path.join(process.cwd(), ".reforge", "store");
+    const defaultDir = path.join(process.cwd(), ".reforge", "store");
+
+    const isValidCandidate = (dir?: string): boolean => {
+      if (!dir || typeof dir !== "string") return false;
+      const trimmed = dir.trim();
+      return trimmed !== "" && trimmed !== "undefined" && trimmed !== "null";
+    };
+
+    const rawDir = isValidCandidate(this.customStoreDir)
+      ? this.customStoreDir!.trim()
+      : isValidCandidate(process.env.REFORGE_STORE_DIR)
+        ? process.env.REFORGE_STORE_DIR!.trim()
+        : defaultDir;
 
     return path.resolve(rawDir);
   }

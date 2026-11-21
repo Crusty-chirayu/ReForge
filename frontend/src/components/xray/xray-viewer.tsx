@@ -29,6 +29,9 @@ export function XRayViewer({
   const [search, setSearch] = useState("");
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string>("ALL");
+  const [neighborLimit, setNeighborLimit] = useState<number>(12);
+  const [matrixPage, setMatrixPage] = useState<number>(0);
+  const [matrixPageSize, setMatrixPageSize] = useState<number>(15);
 
   const modules = useMemo(() => model?.modules ?? [], [model]);
   const files = useMemo(() => model?.files ?? [], [model]);
@@ -95,8 +98,18 @@ export function XRayViewer({
       fanOut: moduleMetrics.fanOut,
     });
 
+    const depList =
+      neighborLimit > 0
+        ? moduleMetrics.dependencies.slice(0, neighborLimit)
+        : moduleMetrics.dependencies;
+
+    const dependentList =
+      neighborLimit > 0
+        ? moduleMetrics.dependents.slice(0, neighborLimit)
+        : moduleMetrics.dependents;
+
     // Dependencies (outbound)
-    moduleMetrics.dependencies.slice(0, 12).forEach((depId) => {
+    depList.forEach((depId) => {
       if (!nodeMap.has(depId)) {
         nodeMap.set(depId, {
           id: depId,
@@ -112,7 +125,7 @@ export function XRayViewer({
     });
 
     // Dependents (inbound)
-    moduleMetrics.dependents.slice(0, 12).forEach((depId) => {
+    dependentList.forEach((depId) => {
       if (!nodeMap.has(depId)) {
         nodeMap.set(depId, {
           id: depId,
@@ -131,7 +144,7 @@ export function XRayViewer({
       graphNodes: Array.from(nodeMap.values()),
       graphEdges: edges,
     };
-  }, [activeModule, moduleMetrics]);
+  }, [activeModule, moduleMetrics, neighborLimit]);
 
   // Filtered files for Tree view
   const filteredFiles = useMemo(() => {
@@ -229,12 +242,33 @@ export function XRayViewer({
         <div className="lg:col-span-8 space-y-4">
           {viewMode === "graph" ? (
             <div className="space-y-2">
-              <div className="flex items-center justify-between text-meta font-mono text-text-secondary px-1">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-meta font-mono text-text-secondary px-1">
                 <span>
                   Focus neighborhood for:{" "}
                   <strong className="text-text-primary">{activeModule?.id ?? "None"}</strong>
                 </span>
-                <span className="text-text-tertiary">Depth: 1 · Click node to inspect</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-text-tertiary">
+                    Showing {graphNodes.length - 1} of {(moduleMetrics?.dependencies.length ?? 0) + (moduleMetrics?.dependents.length ?? 0)} neighbors
+                  </span>
+                  <div className="flex items-center gap-1">
+                    {[12, 24, 0].map((lim) => (
+                      <button
+                        key={lim}
+                        type="button"
+                        onClick={() => setNeighborLimit(lim)}
+                        className={`rounded px-1.5 py-0.5 text-[10px] font-mono ${
+                          neighborLimit === lim
+                            ? "bg-accent/20 text-accent font-semibold border border-accent/40"
+                            : "bg-bg-raised text-text-tertiary hover:text-text-secondary border border-border-subtle"
+                        }`}
+                        title={lim === 0 ? "Show all direct neighbors" : `Show top ${lim} direct neighbors`}
+                      >
+                        {lim === 0 ? "All" : lim}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
               <GraphCanvas
                 nodes={graphNodes}
@@ -279,58 +313,142 @@ export function XRayViewer({
             </div>
           ) : (
             /* Module x Module Coupling Heatmap Matrix */
-            <div className="rounded-[6px] border border-border-default bg-bg-surface overflow-x-auto p-4 max-h-[480px]">
-              <p className="font-mono text-meta text-text-tertiary mb-3">
-                Coupling Matrix ({modules.length} internal modules)
-              </p>
-              <table className="border-collapse font-mono text-[10px]">
-                <thead>
-                  <tr>
-                    <th className="p-1 text-left text-text-tertiary">Module</th>
-                    {modules.slice(0, 15).map((m) => (
-                      <th
-                        key={m.id}
-                        className="p-1 text-center text-text-secondary font-medium w-8 truncate"
-                        title={m.id}
-                      >
-                        {m.id.split("/").pop()?.substring(0, 3)}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {modules.slice(0, 15).map((rowMod) => (
-                    <tr key={rowMod.id} className="hover:bg-bg-raised">
-                      <td
-                        className="p-1 text-text-primary truncate max-w-[140px] cursor-pointer hover:text-accent font-medium"
-                        onClick={() => setSelectedModuleId(rowMod.id)}
-                        title={rowMod.id}
-                      >
-                        {rowMod.id.split("/").pop()}
-                      </td>
-                      {modules.slice(0, 15).map((colMod) => {
-                        const importsCol = rowMod.imports.some(
-                          (imp) => (imp.target ?? imp.specifier) === colMod.id,
-                        );
-                        return (
-                          <td
-                            key={colMod.id}
-                            className={`p-1 text-center border border-border-subtle/40 ${
-                              importsCol
-                                ? "bg-accent/25 text-accent font-bold"
-                                : rowMod.id === colMod.id
-                                ? "bg-bg-raised text-text-tertiary opacity-40"
-                                : "text-text-tertiary/20"
-                            }`}
+            <div className="rounded-[6px] border border-border-default bg-bg-surface overflow-x-auto p-4 max-h-[520px] space-y-3">
+              {(() => {
+                const totalMatrixPages =
+                  matrixPageSize === 0 ? 1 : Math.ceil(modules.length / matrixPageSize) || 1;
+                const safeMatrixPage = Math.min(matrixPage, totalMatrixPages - 1);
+                const startIdx = matrixPageSize === 0 ? 0 : safeMatrixPage * matrixPageSize;
+                const endIdx =
+                  matrixPageSize === 0
+                    ? modules.length
+                    : Math.min(startIdx + matrixPageSize, modules.length);
+                const pagedModules =
+                  matrixPageSize === 0 ? modules : modules.slice(startIdx, endIdx);
+                const activeIndex = modules.findIndex((m) => m.id === activeModule?.id);
+
+                return (
+                  <>
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border-subtle pb-2.5 font-mono text-meta">
+                      <div>
+                        <span className="text-text-secondary font-medium">Coupling Matrix</span>
+                        <span className="ml-2 text-[11px] text-text-tertiary">
+                          Showing modules {modules.length === 0 ? 0 : startIdx + 1}–{endIdx} of {modules.length}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {activeIndex >= 0 && matrixPageSize > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setMatrixPage(Math.floor(activeIndex / matrixPageSize))}
+                            className="rounded border border-border-subtle bg-bg-raised px-2 py-0.5 text-[11px] text-text-secondary hover:text-accent transition-colors"
+                            title="Jump matrix page to selected module"
                           >
-                            {importsCol ? "●" : "·"}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                            Jump to selected
+                          </button>
+                        )}
+
+                        {/* Page size toggle */}
+                        <div className="flex items-center gap-1 text-[11px] text-text-tertiary">
+                          <span>View:</span>
+                          {[15, 30, 0].map((sz) => (
+                            <button
+                              key={sz}
+                              type="button"
+                              onClick={() => {
+                                setMatrixPageSize(sz);
+                                setMatrixPage(0);
+                              }}
+                              className={`rounded px-1.5 py-0.5 text-[10px] font-mono ${
+                                matrixPageSize === sz
+                                  ? "bg-accent/20 text-accent font-semibold border border-accent/40"
+                                  : "bg-bg-raised text-text-tertiary hover:text-text-secondary border border-border-subtle"
+                              }`}
+                            >
+                              {sz === 0 ? "All" : sz}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Prev / Next Page controls */}
+                        {matrixPageSize > 0 && totalMatrixPages > 1 && (
+                          <div className="flex items-center gap-1 text-[11px]">
+                            <button
+                              type="button"
+                              disabled={safeMatrixPage === 0}
+                              onClick={() => setMatrixPage((p) => Math.max(0, p - 1))}
+                              className="rounded border border-border-subtle bg-bg-raised px-1.5 py-0.5 text-text-secondary disabled:opacity-40"
+                            >
+                              Prev
+                            </button>
+                            <span className="text-text-tertiary px-1">
+                              {safeMatrixPage + 1}/{totalMatrixPages}
+                            </span>
+                            <button
+                              type="button"
+                              disabled={safeMatrixPage >= totalMatrixPages - 1}
+                              onClick={() => setMatrixPage((p) => Math.min(totalMatrixPages - 1, p + 1))}
+                              className="rounded border border-border-subtle bg-bg-raised px-1.5 py-0.5 text-text-secondary disabled:opacity-40"
+                            >
+                              Next
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <table className="border-collapse font-mono text-[10px]">
+                      <thead>
+                        <tr>
+                          <th className="p-1 text-left text-text-tertiary">Module</th>
+                          {pagedModules.map((m) => (
+                            <th
+                              key={m.id}
+                              className="p-1 text-center text-text-secondary font-medium w-8 truncate"
+                              title={m.id}
+                            >
+                              {m.id.split("/").pop()?.substring(0, 3)}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pagedModules.map((rowMod) => (
+                          <tr key={rowMod.id} className="hover:bg-bg-raised">
+                            <td
+                              className="p-1 text-text-primary truncate max-w-[140px] cursor-pointer hover:text-accent font-medium"
+                              onClick={() => setSelectedModuleId(rowMod.id)}
+                              title={rowMod.id}
+                            >
+                              {rowMod.id.split("/").pop()}
+                            </td>
+                            {pagedModules.map((colMod) => {
+                              const importsCol = rowMod.imports.some(
+                                (imp) => (imp.target ?? imp.specifier) === colMod.id,
+                              );
+                              return (
+                                <td
+                                  key={colMod.id}
+                                  className={`p-1 text-center border border-border-subtle/40 ${
+                                    importsCol
+                                      ? "bg-accent/25 text-accent font-bold"
+                                      : rowMod.id === colMod.id
+                                      ? "bg-bg-raised text-text-tertiary opacity-40"
+                                      : "text-text-tertiary/20"
+                                  }`}
+                                >
+                                  {importsCol ? "●" : "·"}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </>
+                );
+              })()}
             </div>
           )}
         </div>

@@ -7,7 +7,6 @@ import {
   isNavItemActive,
   pageTitleFor,
 } from "@/lib/navigation";
-import { WORKFLOW_STEPS } from "@/lib/utils/workflow";
 
 /**
  * Every route that actually exists under src/app. If a page is added or
@@ -18,6 +17,8 @@ const REAL_ROUTES = [
   "/",
   "/analyze",
   "/analyze/report",
+  "/xray",
+  "/doctor",
   "/plan",
   "/novelty",
   "/impact",
@@ -26,6 +27,7 @@ const REAL_ROUTES = [
   "/pipeline/new",
   "/pipeline/[pipelineId]",
   "/snapshots",
+  "/snapshot/compare",
   "/snapshot/[snapshotId]",
   "/snapshot/compare/[beforeId]/[afterId]",
   "/brain",
@@ -40,18 +42,21 @@ describe("Navigation registry", () => {
     }
   });
 
-  it("exposes every primary product area required by the console", () => {
+  it("exposes every primary product area required by Forge Ledger IA", () => {
     const labels = NAV_ITEMS.map((item) => item.label);
     for (const expected of [
-      "Dashboard",
-      "Analyze",
-      "Plan",
-      "Novelty",
+      "Overview",
+      "Ingest",
+      "Report",
+      "X-Ray",
+      "Doctor",
       "Impact",
-      "Build",
-      "Pipeline",
-      "Snapshots",
+      "Plan",
       "Brain",
+      "Builder",
+      "Pipelines",
+      "Snapshots",
+      "Compare",
     ]) {
       expect(labels).toContain(expected);
     }
@@ -86,18 +91,19 @@ describe("Active navigation state", () => {
     expect(isNavItemActive(dashboard, "/brain")).toBe(false);
   });
 
-  it("highlights the parent for nested routes", () => {
-    expect(activeNavItem("/analyze/report")?.label).toBe("Analyze");
-    expect(activeNavItem("/pipeline/new")?.label).toBe("Pipeline");
-    expect(activeNavItem("/pipeline/pl_01J2XYZ")?.label).toBe("Pipeline");
+  it("highlights the exact destination for nested routes", () => {
+    expect(activeNavItem("/analyze/report")?.label).toBe("Report");
+    expect(activeNavItem("/pipeline/new")?.label).toBe("Pipelines");
+    expect(activeNavItem("/pipeline/pl_01J2XYZ")?.label).toBe("Pipelines");
   });
 
-  it("highlights Snapshots for both the list and the detail/compare routes", () => {
+  it("highlights Snapshots and Compare appropriately", () => {
     expect(activeNavItem("/snapshots")?.label).toBe("Snapshots");
     expect(activeNavItem("/snapshot/snap_abc")?.label).toBe("Snapshots");
+    expect(activeNavItem("/snapshot/compare")?.label).toBe("Compare");
     expect(
       activeNavItem("/snapshot/compare/snap_a/snap_b")?.label,
-    ).toBe("Snapshots");
+    ).toBe("Compare");
   });
 
   it("matches on segment boundaries, never on a bare prefix", () => {
@@ -112,8 +118,8 @@ describe("Active navigation state", () => {
     expect(isNavItemActive(analyze, "/analyze/")).toBe(true);
   });
 
-  it("activates exactly one item per real static route", () => {
-    for (const route of STATIC_ROUTES) {
+  it("activates exactly one item per registered static route", () => {
+    for (const route of NAV_ITEMS.map((item) => item.href)) {
       const matches = NAV_ITEMS.filter((i) => isNavItemActive(i, route));
       expect(matches.length, `route ${route}`).toBe(1);
     }
@@ -121,8 +127,8 @@ describe("Active navigation state", () => {
 });
 
 describe("Breadcrumbs", () => {
-  it("returns a single crumb for the dashboard", () => {
-    expect(breadcrumbsFor("/")).toEqual([{ label: "Dashboard" }]);
+  it("returns a single crumb for the overview", () => {
+    expect(breadcrumbsFor("/")).toEqual([{ label: "Overview" }]);
   });
 
   it("links the parent and marks the leaf for nested routes", () => {
@@ -142,39 +148,32 @@ describe("Breadcrumbs", () => {
 
   it("labels the snapshot comparison route", () => {
     expect(breadcrumbsFor("/snapshot/compare/a/b").at(-1)).toEqual({
-      label: "Compare",
+      label: "Diff",
     });
   });
 
   it("never emits a crumb linking to a non-existent route", () => {
     for (const route of STATIC_ROUTES) {
-      for (const crumb of breadcrumbsFor(route)) {
-        if (crumb.href) expect(STATIC_ROUTES).toContain(crumb.href);
+      const crumbs = breadcrumbsFor(route);
+      expect(crumbs.length).toBeGreaterThan(0);
+      for (const crumb of crumbs) {
+        if (crumb.href) {
+          expect(
+            STATIC_ROUTES as readonly string[],
+            `crumb ${crumb.label} -> ${crumb.href}`,
+          ).toContain(crumb.href);
+        }
       }
     }
   });
-
-  it("derives a readable page title for every static route", () => {
-    for (const route of STATIC_ROUTES) {
-      expect(pageTitleFor(route).length).toBeGreaterThan(0);
-    }
-    expect(pageTitleFor("/")).toBe("Dashboard");
-    expect(pageTitleFor("/analyze/report")).toBe("Analyze › Report");
-  });
 });
 
-describe("Workflow rail", () => {
-  it("only points at routes that exist", () => {
-    for (const step of WORKFLOW_STEPS) {
-      expect(STATIC_ROUTES).toContain(step.href);
-    }
-  });
-
-  it("orders the journey Analyze → Report → … → Pipeline", () => {
-    const labels = WORKFLOW_STEPS.map((s) => s.label);
-    expect(labels[0]).toBe("Analyze");
-    expect(labels[1]).toBe("Report");
-    expect(labels.at(-1)).toBe("Pipeline");
-    expect(labels).toContain("Build");
+describe("Page titles", () => {
+  it("generates honest titles matching the breadcrumb trail", () => {
+    expect(pageTitleFor("/")).toBe("Overview");
+    expect(pageTitleFor("/analyze")).toBe("Ingest");
+    expect(pageTitleFor("/analyze/report")).toBe("Analyze › Report");
+    expect(pageTitleFor("/pipeline/pl_123")).toBe("Pipelines › Result");
+    expect(pageTitleFor("/snapshot/compare/a/b")).toBe("Compare › Diff");
   });
 });

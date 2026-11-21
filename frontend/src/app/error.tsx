@@ -40,7 +40,7 @@ export default function RouteError({
             </div>
             <div className="min-w-0">
               <h1 className="text-sm font-semibold text-rose-400">
-                This view failed to render
+                This view failed to render: {error?.message}
               </h1>
               <p className="mt-1 max-w-prose text-xs text-ink-muted">
                 Something went wrong while building this page in your browser.

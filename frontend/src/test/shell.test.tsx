@@ -68,7 +68,7 @@ describe("Console shell — navigation", () => {
   it("marks the current route with aria-current", () => {
     renderShell("/analyze");
     const nav = primaryNav();
-    expect(within(nav).getByRole("link", { name: "Analyze" })).toHaveAttribute(
+    expect(within(nav).getByRole("link", { name: "Ingest" })).toHaveAttribute(
       "aria-current",
       "page",
     );
@@ -80,7 +80,7 @@ describe("Console shell — navigation", () => {
   it("keeps the parent highlighted on a nested route", () => {
     renderShell("/analyze/report");
     expect(
-      within(primaryNav()).getByRole("link", { name: "Analyze" }),
+      within(primaryNav()).getByRole("link", { name: "Report" }),
     ).toHaveAttribute("aria-current", "page");
   });
 
@@ -97,7 +97,7 @@ describe("Console shell — navigation", () => {
       .getAllByRole("link")
       .filter((el) => el.getAttribute("aria-current") === "page");
     expect(current).toHaveLength(1);
-    expect(current[0]).toHaveAccessibleName("Pipeline");
+    expect(current[0]).toHaveAccessibleName("Pipelines");
   });
 });
 
@@ -157,7 +157,7 @@ describe("Console shell — accessibility", () => {
     renderShell();
     fireEvent.click(screen.getByRole("button", { name: "Collapse sidebar" }));
     expect(
-      within(primaryNav()).getByRole("link", { name: "Dashboard" }),
+      within(primaryNav()).getByRole("link", { name: "Overview" }),
     ).toBeInTheDocument();
   });
 

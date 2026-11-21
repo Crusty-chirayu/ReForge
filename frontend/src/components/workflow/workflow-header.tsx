@@ -27,7 +27,7 @@ export function WorkflowHeader({ current, next }: WorkflowHeaderProps) {
   );
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 w-full max-w-full overflow-hidden">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2 text-xs text-ink-muted">
           <Button
@@ -54,8 +54,8 @@ export function WorkflowHeader({ current, next }: WorkflowHeaderProps) {
       </div>
 
       {/* Workflow rail — where you are, and every step you can jump to. */}
-      <nav aria-label="Workflow progress" className="-mx-1 overflow-x-auto px-1 pb-1">
-        <ol className="flex min-w-max items-center gap-1">
+      <nav aria-label="Workflow progress" className="w-full max-w-full overflow-x-auto pb-1">
+        <ol className="flex flex-wrap sm:flex-nowrap sm:min-w-max items-center gap-1">
           {WORKFLOW_STEPS.map((step, index) => {
             const isCurrent = index === currentIndex;
             const isComplete = currentIndex >= 0 && index < currentIndex;

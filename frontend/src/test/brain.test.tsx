@@ -18,6 +18,7 @@ const { pushMock } = vi.hoisted(() => ({ pushMock: vi.fn() }));
 
 vi.mock("@/lib/api/client", () => ({
   brainQuery: brainQueryMock,
+  getHealth: vi.fn().mockResolvedValue({ status: "ok", service: "reforge-engine" }),
   ApiError: class ApiError extends Error {
     status: number;
     body?: unknown;

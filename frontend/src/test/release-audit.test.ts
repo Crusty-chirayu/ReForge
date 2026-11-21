@@ -389,7 +389,7 @@ describe("Route inventory", () => {
     ...routes(APP),
   ].sort();
 
-  it("contains exactly the 14 released routes", () => {
+  it("contains exactly the 17 released routes", () => {
     expect(all).toEqual(
       [
         "/",
@@ -397,6 +397,7 @@ describe("Route inventory", () => {
         "/analyze/report",
         "/brain",
         "/build",
+        "/doctor",
         "/impact",
         "/novelty",
         "/pipeline",
@@ -404,11 +405,13 @@ describe("Route inventory", () => {
         "/pipeline/new",
         "/plan",
         "/snapshot/[snapshotId]",
+        "/snapshot/compare",
         "/snapshot/compare/[beforeId]/[afterId]",
         "/snapshots",
+        "/xray",
       ].sort(),
     );
-    expect(all).toHaveLength(14);
+    expect(all).toHaveLength(17);
   });
 
   it("has no duplicate route paths", () => {

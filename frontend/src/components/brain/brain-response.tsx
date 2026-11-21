@@ -1,7 +1,8 @@
-import { AlertTriangle, CheckCircle2, Quote, Sparkles } from "lucide-react";
+import { AlertTriangle, Quote } from "lucide-react";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Mono } from "@/components/ui/mono";
 import { StatusBadge, type StatusVariant } from "@/components/ui/status-badge";
+import { FactInferenceBlock } from "@/components/ui/fact-inference-block";
 import type {
   BrainInference,
   BrainResponse,
@@ -31,18 +32,25 @@ function AnswerBlock({ answer }: { answer: string }) {
   );
 }
 
-function EvidenceList({ evidence }: { evidence: Evidence[] }) {
+function EvidenceList({
+  evidence,
+  onSelectEvidence,
+}: {
+  evidence: Evidence[];
+  onSelectEvidence?: (evidence: Evidence) => void;
+}) {
   if (evidence.length === 0) return null;
   return (
     <div className="space-y-1.5">
       {evidence.map((ev, i) => (
         <div
           key={i}
-          className="flex items-start gap-2 rounded border border-steel/20 bg-steel/5 px-2.5 py-1.5"
+          onClick={() => onSelectEvidence?.(ev)}
+          className="flex items-start gap-2 rounded border border-steel/20 bg-steel/5 px-2.5 py-1.5 cursor-pointer hover:bg-steel/10 transition-colors"
         >
           <Quote size={10} className="mt-0.5 shrink-0 text-steel" />
           <div className="min-w-0 font-mono text-[11px] text-ink-muted">
-            <span className="text-steel">{ev.file}</span>
+            <span className="text-steel font-medium">{ev.file}</span>
             <span className="text-ink-subtle">: </span>
             {ev.detail}
           </div>
@@ -52,16 +60,24 @@ function EvidenceList({ evidence }: { evidence: Evidence[] }) {
   );
 }
 
-function InferenceBadge({ inference }: { inference: BrainInference }) {
+function InferenceList({
+  inferences,
+  onSelectEvidence,
+}: {
+  inferences: BrainInference[];
+  onSelectEvidence?: (evidence: Evidence) => void;
+}) {
   return (
-    <div className="flex items-start gap-2 rounded border border-ink-border/20 bg-ink-1/30 px-2.5 py-2">
-      <Sparkles size={11} className="mt-0.5 shrink-0 text-amber-400" />
-      <div className="min-w-0">
-        <p className="text-xs text-ink-fg">{inference.statement}</p>
-        <p className="mt-0.5 font-mono text-[9px] uppercase tracking-wider text-ink-subtle">
-          inference · {inference.confidence} confidence · unverified
-        </p>
-      </div>
+    <div className="space-y-2">
+      {inferences.map((inf, i) => (
+        <FactInferenceBlock
+          key={i}
+          type="inference"
+          statement={inf.statement}
+          confidence={inf.confidence}
+          onEvidenceClick={onSelectEvidence}
+        />
+      ))}
     </div>
   );
 }
@@ -70,7 +86,13 @@ function InferenceBadge({ inference }: { inference: BrainInference }) {
  * Renders a real BrainResponse, keeping ANSWER / EVIDENCE / LIMITATIONS
  * visually distinct and never overstating certainty.
  */
-export function BrainResponseView({ response }: { response: BrainResponse }) {
+export function BrainResponseView({
+  response,
+  onSelectEvidence,
+}: {
+  response: BrainResponse;
+  onSelectEvidence?: (evidence: Evidence) => void;
+}) {
   return (
     <div className="space-y-4" data-testid="brain-response">
       {/* Answer */}
@@ -97,7 +119,10 @@ export function BrainResponseView({ response }: { response: BrainResponse }) {
             subtitle={`${response.evidence.length} cited item${response.evidence.length === 1 ? "" : "s"} — grounded in the deterministic report`}
           />
           <div className="px-4 pb-4">
-            <EvidenceList evidence={response.evidence} />
+            <EvidenceList
+              evidence={response.evidence}
+              onSelectEvidence={onSelectEvidence}
+            />
           </div>
         </Card>
       )}
@@ -109,13 +134,11 @@ export function BrainResponseView({ response }: { response: BrainResponse }) {
             title="Inferences"
             subtitle="AI-generated statements — not verified against deterministic facts"
           />
-          <div className="space-y-1.5 px-4 pb-4">
-            {response.inferences.map((inf, i) => (
-              <InferenceBadge
-                key={i}
-                inference={inf}
-              />
-            ))}
+          <div className="px-4 pb-4">
+            <InferenceList
+              inferences={response.inferences}
+              onSelectEvidence={onSelectEvidence}
+            />
           </div>
         </Card>
       )}
@@ -159,12 +182,6 @@ export function BrainResponseView({ response }: { response: BrainResponse }) {
               {ctx}
             </Mono>
           ))}
-          {response.contextTruncated && (
-            <span className="inline-flex items-center gap-1 rounded border border-amber-500/25 bg-amber-500/10 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-amber-400">
-              <CheckCircle2 size={9} />
-              truncated
-            </span>
-          )}
         </div>
       )}
     </div>

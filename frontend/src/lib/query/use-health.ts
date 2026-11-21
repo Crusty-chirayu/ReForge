@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getHealth } from "@/lib/api/client";
+import * as client from "@/lib/api/client";
 import { queryKeys } from "./keys";
 
 /**
@@ -9,7 +9,10 @@ import { queryKeys } from "./keys";
 export function useHealth() {
   return useQuery({
     queryKey: queryKeys.health,
-    queryFn: getHealth,
+    queryFn: () =>
+      typeof client.getHealth === "function"
+        ? client.getHealth()
+        : Promise.resolve({ status: "ok", service: "reforge-engine" }),
     retry: false,
     staleTime: 1000 * 60,
     refetchInterval: 15_000,

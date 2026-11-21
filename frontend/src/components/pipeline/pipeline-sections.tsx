@@ -72,8 +72,8 @@ function Detail({ label, value }: { label: string; value: ReactNode }) {
   );
 }
 
-function EvidenceList({ evidence }: { evidence: { file: string; detail: string }[] }) {
-  if (evidence.length === 0) return null;
+function EvidenceList({ evidence }: { evidence?: { file: string; detail: string }[] }) {
+  if (!evidence || evidence.length === 0) return null;
   return (
     <div className="mt-2 space-y-1">
       {evidence.map((ev, i) => (
@@ -224,28 +224,28 @@ const priorityVariant: Record<PlanTask["priority"], StatusVariant> = {
 };
 
 export function PlanSection({ plan }: { plan: Plan }) {
-  const orderMap = new Map(plan.orderedTaskIds.map((id, i) => [id, i + 1]));
+  const orderMap = new Map((plan.orderedTaskIds ?? plan.tasks?.map((t) => t.id) ?? []).map((id, i) => [id, i + 1]));
 
   return (
     <section className="space-y-4">
       <SectionHeading
         kicker="05 · Plan"
         title="Improvement Plan"
-        subtitle={`${plan.tasks.length} tasks · ${plan.risks.length} risks · ${plan.assumptions.length} assumptions`}
+        subtitle={`${plan.tasks?.length ?? 0} tasks · ${plan.risks?.length ?? 0} risks · ${plan.assumptions?.length ?? 0} assumptions`}
       />
       <Card padding="lg">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <h3 className="text-base font-semibold text-ink-fg">
             {plan.objective}
           </h3>
-          <StatusBadge variant={plan.validation.valid ? "healthy" : "failed"}>
-            {plan.validation.valid ? "Valid" : "Invalid"}
+          <StatusBadge variant={plan.validation?.valid ? "healthy" : "failed"}>
+            {plan.validation?.valid ? "Valid" : "Invalid"}
           </StatusBadge>
         </div>
-        {plan.orderedTaskIds.length > 0 && (
+        {(plan.orderedTaskIds?.length ?? 0) > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
-            {plan.orderedTaskIds.map((taskId, i) => {
-              const task = plan.tasks.find((t) => t.id === taskId);
+            {plan.orderedTaskIds?.map((taskId, i) => {
+              const task = plan.tasks?.find((t) => t.id === taskId);
               return (
                 <span
                   key={taskId}
@@ -262,11 +262,11 @@ export function PlanSection({ plan }: { plan: Plan }) {
         )}
       </Card>
       <div className="space-y-2">
-        {plan.tasks.map((task) => (
+        {plan.tasks?.map((task) => (
           <TaskCard key={task.id} task={task} order={orderMap.get(task.id)} />
         ))}
       </div>
-      {plan.risks.length > 0 && (
+      {(plan.risks?.length ?? 0) > 0 && (
         <Card padding="md">
           <CardHeader title="Risks" subtitle={`${plan.risks.length} identified`} />
           <ul className="space-y-1.5">
@@ -288,7 +288,7 @@ export function PlanSection({ plan }: { plan: Plan }) {
           </ul>
         </Card>
       )}
-      {plan.assumptions.length > 0 && (
+      {(plan.assumptions?.length ?? 0) > 0 && (
         <Card padding="md" className="border-ink-border/30">
           <CardHeader title="Assumptions" subtitle="Plan assumptions" />
           <ul className="space-y-1">
@@ -304,7 +304,7 @@ export function PlanSection({ plan }: { plan: Plan }) {
           </ul>
         </Card>
       )}
-      {plan.unresolvedQuestions.length > 0 && (
+      {(plan.unresolvedQuestions?.length ?? 0) > 0 && (
         <Card padding="md" className="border-amber-500/20">
           <CardHeader title="Open Questions" subtitle="Requires human judgment" />
           <ul className="space-y-1">
@@ -347,7 +347,7 @@ function TaskCard({ task, order }: { task: PlanTask; order?: number }) {
       </summary>
       <div className="mt-2 space-y-3">
         <p className="text-xs leading-relaxed text-ink-muted">{task.objective}</p>
-        {task.affectedModules.length > 0 && (
+        {(task.affectedModules?.length ?? 0) > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {task.affectedModules.map((m) => (
               <Mono
@@ -359,12 +359,12 @@ function TaskCard({ task, order }: { task: PlanTask; order?: number }) {
             ))}
           </div>
         )}
-        {task.dependencies.length > 0 && (
+        {(task.dependencies?.length ?? 0) > 0 && (
           <p className="text-xs text-ink-subtle">
             Depends on: {task.dependencies.join(", ")}
           </p>
         )}
-        {task.acceptanceCriteria.length > 0 && (
+        {(task.acceptanceCriteria?.length ?? 0) > 0 && (
           <ul className="space-y-1">
             {task.acceptanceCriteria.map((c) => (
               <li
@@ -377,7 +377,7 @@ function TaskCard({ task, order }: { task: PlanTask; order?: number }) {
             ))}
           </ul>
         )}
-        {task.verification.length > 0 && (
+        {(task.verification?.length ?? 0) > 0 && (
           <ul className="space-y-1">
             {task.verification.map((v) => (
               <li
@@ -441,10 +441,10 @@ export function ImpactSection({ impact }: { impact: ChangeImpactReport }) {
         <Card padding="none">
           <CardHeader
             title="Directly Affected"
-            subtitle={`${impact.directModules.length} modules`}
+            subtitle={`${impact.directModules?.length ?? 0} modules`}
           />
           <div className="flex flex-wrap gap-1.5 px-4 pb-4">
-            {impact.directModules.map((m) => (
+            {(impact.directModules ?? []).map((m) => (
               <Mono key={m} className="border border-steel/30 bg-steel/10 text-[10px] text-steel">
                 {m}
               </Mono>
@@ -454,10 +454,10 @@ export function ImpactSection({ impact }: { impact: ChangeImpactReport }) {
         <Card padding="none">
           <CardHeader
             title="Indirectly Affected"
-            subtitle={`${impact.indirectModules.length} modules`}
+            subtitle={`${impact.indirectModules?.length ?? 0} modules`}
           />
           <div className="flex flex-wrap gap-1.5 px-4 pb-4">
-            {impact.indirectModules.map((m) => (
+            {(impact.indirectModules ?? []).map((m) => (
               <Mono key={m} className="border border-ink-border/30 bg-ink-1/40 text-[10px] text-ink-muted">
                 {m}
               </Mono>
@@ -465,7 +465,7 @@ export function ImpactSection({ impact }: { impact: ChangeImpactReport }) {
           </div>
         </Card>
       </div>
-      {impact.relationships.length > 0 && (
+      {(impact.relationships?.length ?? 0) > 0 && (
         <Card padding="md">
           <CardHeader title="Relationships" subtitle="Modeled module graph" />
           <div className="space-y-1.5">
@@ -485,7 +485,7 @@ export function ImpactSection({ impact }: { impact: ChangeImpactReport }) {
           </div>
         </Card>
       )}
-      {impact.risks.length > 0 && (
+      {(impact.risks?.length ?? 0) > 0 && (
         <Card padding="md">
           <CardHeader title="Risks" subtitle={`${impact.risks.length} identified`} />
           <div className="space-y-2">
@@ -501,7 +501,7 @@ export function ImpactSection({ impact }: { impact: ChangeImpactReport }) {
           </div>
         </Card>
       )}
-      {impact.recommendations.length > 0 && (
+      {(impact.recommendations?.length ?? 0) > 0 && (
         <Card padding="md">
           <CardHeader title="Recommendations" subtitle="Suggested actions" />
           <div className="space-y-2">
@@ -637,19 +637,19 @@ export function BuildSection({
             </div>
           );
         })}
-        {build.fileChanges.length === 0 && (
+        {(build.fileChanges?.length ?? 0) === 0 && (
           <p className="text-xs text-ink-subtle">No file operations proposed.</p>
         )}
       </div>
 
-      {build.dependencyChanges.length > 0 && (
+      {(build.dependencyChanges?.length ?? 0) > 0 && (
         <Card padding="md">
           <CardHeader
             title="Dependency Changes"
-            subtitle={`${build.dependencyChanges.length} proposed`}
+            subtitle={`${build.dependencyChanges?.length ?? 0} proposed`}
           />
           <div className="space-y-1.5">
-            {build.dependencyChanges.map((dep) => (
+            {build.dependencyChanges?.map((dep) => (
               <div
                 key={dep.name}
                 className="flex items-center gap-2 rounded border border-ink-border/30 bg-ink-1/30 px-3 py-2"
@@ -674,11 +674,11 @@ export function BuildSection({
         </Card>
       )}
 
-      {build.testChanges.length > 0 && (
+      {(build.testChanges?.length ?? 0) > 0 && (
         <Card padding="md">
           <CardHeader title="Test Notes" subtitle="Suggested test focus" />
           <ul className="space-y-1">
-            {build.testChanges.map((t) => (
+            {build.testChanges?.map((t) => (
               <li key={t} className="flex items-start gap-1.5 text-xs text-ink-muted">
                 <FileText size={10} className="mt-0.5 shrink-0 text-steel" />
                 {t}
@@ -688,11 +688,11 @@ export function BuildSection({
         </Card>
       )}
 
-      {build.risks.length > 0 && (
+      {(build.risks?.length ?? 0) > 0 && (
         <Card padding="md">
           <CardHeader title="Risks" subtitle="Carried from workflow context" />
           <ul className="space-y-1">
-            {build.risks.map((risk) => (
+            {build.risks?.map((risk) => (
               <li key={risk} className="flex items-start gap-1.5 text-xs text-ink-muted">
                 <AlertTriangle size={10} className="mt-0.5 shrink-0 text-amber-400" />
                 {risk}
@@ -702,7 +702,7 @@ export function BuildSection({
         </Card>
       )}
 
-      {build.assumptions.length > 0 && (
+      {(build.assumptions?.length ?? 0) > 0 && (
         <Card padding="md" className="border-ink-border/30">
           <CardHeader title="Assumptions" subtitle="Build assumptions" />
           <ul className="space-y-1">
@@ -776,18 +776,18 @@ export function ExecutionSection({ receipt }: { receipt: ExecutionReceipt }) {
             label="Operations"
             value={
               <span className="text-ink-fg">
-                {receipt.appliedOperations.length} applied of{" "}
-                {receipt.operations.length}
+                {receipt.appliedOperations?.length ?? 0} applied of{" "}
+                {receipt.operations?.length ?? receipt.appliedOperations?.length ?? 0}
               </span>
             }
           />
           <Detail
             label="Started"
-            value={<span className="text-ink-muted">{formatDateTime(receipt.createdAt)}</span>}
+            value={<span className="text-ink-muted">{receipt.createdAt ? formatDateTime(receipt.createdAt) : "—"}</span>}
           />
           <Detail
             label="Completed"
-            value={<span className="text-ink-muted">{formatDateTime(receipt.completedAt)}</span>}
+            value={<span className="text-ink-muted">{receipt.completedAt ? formatDateTime(receipt.completedAt) : "—"}</span>}
           />
         </dl>
         {!executed && receipt.status === "PENDING" && (
@@ -797,11 +797,11 @@ export function ExecutionSection({ receipt }: { receipt: ExecutionReceipt }) {
         )}
       </Card>
 
-      {receipt.appliedOperations.length > 0 && (
+      {(receipt.appliedOperations?.length ?? 0) > 0 && (
         <Card padding="none">
           <CardHeader
             title="Applied Operations"
-            subtitle={`${receipt.appliedOperations.length} operations`}
+            subtitle={`${receipt.appliedOperations?.length ?? 0} operations`}
           />
           <div className="space-y-1.5 px-4 pb-4">
             {receipt.appliedOperations.map((op, i) => {
@@ -934,7 +934,7 @@ export function VerificationSection({
               )}
             </div>
           ))}
-          {verification.results.length === 0 && (
+          {(verification.results?.length ?? 0) === 0 && (
             <p className="text-xs text-ink-subtle">
               No verification results were returned.
             </p>
@@ -953,8 +953,8 @@ export function RollbackSection({
   receipt?: ExecutionReceipt;
 }) {
   const rolledBack = receipt?.status === "ROLLED_BACK";
-  const attempted = receipt?.rollback.attempted ?? false;
-  const succeeded = receipt?.rollback.succeeded ?? false;
+  const attempted = receipt?.rollback?.attempted ?? false;
+  const succeeded = receipt?.rollback?.succeeded ?? false;
 
   return (
     <section className="space-y-4">
@@ -1006,27 +1006,27 @@ export function DiffSummarySection({ diff }: { diff: DiffSummary }) {
     [
       {
         label: "CREATE",
-        count: diff.created.length,
+        count: diff.created?.length ?? 0,
         color: "text-emerald-400",
-        items: diff.created,
+        items: diff.created ?? [],
       },
       {
         label: "MODIFY",
-        count: diff.modified.length,
+        count: diff.modified?.length ?? 0,
         color: "text-steel",
-        items: diff.modified,
+        items: diff.modified ?? [],
       },
       {
         label: "RENAME",
-        count: diff.renamed.length,
+        count: diff.renamed?.length ?? 0,
         color: "text-amber-400",
-        items: diff.renamed.map((r) => `${r.from} → ${r.to}`),
+        items: diff.renamed?.map((r) => `${r.from} → ${r.to}`) ?? [],
       },
       {
         label: "DELETE",
-        count: diff.deleted.length,
+        count: diff.deleted?.length ?? 0,
         color: "text-rose-400",
-        items: diff.deleted,
+        items: diff.deleted ?? [],
       },
     ];
 
@@ -1059,11 +1059,11 @@ export function DiffSummarySection({ diff }: { diff: DiffSummary }) {
           </Card>
         ))}
       </div>
-      {diff.failed.length > 0 && (
+      {(diff.failed?.length ?? 0) > 0 && (
         <Card padding="md" className="border-rose-500/20 bg-rose-500/5">
           <CardHeader
             title="Failed Operations"
-            subtitle={`${diff.failed.length} failed`}
+            subtitle={`${diff.failed?.length ?? 0} failed`}
           />
           <div className="space-y-0.5">
             {diff.failed.map((path) => (
@@ -1149,8 +1149,8 @@ export function ProvenanceSection({
                 label="Source"
                 value={
                   <Mono className="text-ink-fg">
-                    {exec.provenance.source.kind}
-                    {exec.provenance.source.reference
+                    {exec.provenance?.source?.kind ?? "pipeline"}
+                    {exec.provenance?.source?.reference
                       ? ` · ${exec.provenance.source.reference}`
                       : ""}
                   </Mono>

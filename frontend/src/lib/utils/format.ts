@@ -2,8 +2,9 @@
 // Formatting helpers for technical identifiers and timestamps.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Truncate a technical identifier with an ellipsis. */
-export function shortId(id: string, length = 8): string {
+/** Truncate a technical identifier with an ellipsis. Safe on undefined. */
+export function shortId(id: string | undefined | null, length = 8): string {
+  if (!id) return "";
   if (id.length <= length) return id;
   return `${id.slice(0, length)}…`;
 }

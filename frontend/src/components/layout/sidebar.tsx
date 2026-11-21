@@ -3,7 +3,7 @@
 import React, { useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronRight, PanelLeftClose, PanelLeftOpen, FolderGit2 } from "lucide-react";
+import { ChevronRight, PanelLeftClose, PanelLeftOpen, FolderGit2, Settings } from "lucide-react";
 import { NAV_SECTIONS, isNavItemActive } from "@/lib/navigation";
 import { useHealth } from "@/lib/query/use-health";
 import { reportStore } from "@/lib/context/report-context";
@@ -14,12 +14,14 @@ export interface SidebarProps {
   collapsed?: boolean;
   onToggleCollapsed?: () => void;
   onNavigate?: () => void;
+  onOpenSettings?: () => void;
 }
 
 export function Sidebar({
   collapsed = false,
   onToggleCollapsed,
   onNavigate,
+  onOpenSettings,
 }: SidebarProps) {
   const pathname = usePathname();
   const { data: health, isLoading, isError } = useHealth();
@@ -178,6 +180,24 @@ export function Sidebar({
           Backend status: {statusLabel.toLowerCase()}
         </span>
       </div>
+
+      {/* Settings Action */}
+      {onOpenSettings && (
+        <div className="border-t border-border-subtle p-2 bg-bg-surface">
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            className={[
+              "flex w-full items-center gap-2.5 rounded-[4px] px-2 py-1.5 text-ui-dense font-medium text-text-secondary transition-colors hover:bg-bg-raised hover:text-text-primary",
+              collapsed ? "justify-center px-1" : "",
+            ].join(" ")}
+            title="Settings"
+          >
+            <Settings size={16} strokeWidth={1.5} className="shrink-0 text-text-tertiary" aria-hidden="true" />
+            {!collapsed && <span>Settings</span>}
+          </button>
+        </div>
+      )}
 
       {/* Collapse Toggle */}
       {onToggleCollapsed && (

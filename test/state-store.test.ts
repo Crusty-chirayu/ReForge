@@ -332,3 +332,47 @@ test("18: Host workspace remains untouched", async () => {
   const projectFile = await readFile(path.resolve("src/state-store.ts"), "utf-8");
   assert.ok(projectFile.length > 0);
 });
+
+test("19: Storage configuration safety — invalid, undefined, and empty paths fall back safely", () => {
+  const defaultExpected = path.resolve(process.cwd(), ".reforge", "store");
+
+  // customStoreDir validations
+  const storeUndef = new StateStore("undefined");
+  assert.equal(storeUndef.baseDir, defaultExpected);
+
+  const storeEmpty = new StateStore("");
+  assert.equal(storeEmpty.baseDir, defaultExpected);
+
+  const storeWhitespace = new StateStore("   ");
+  assert.equal(storeWhitespace.baseDir, defaultExpected);
+
+  const storeNullStr = new StateStore("null");
+  assert.equal(storeNullStr.baseDir, defaultExpected);
+
+  // process.env.REFORGE_STORE_DIR validations
+  const prevEnv = process.env.REFORGE_STORE_DIR;
+  try {
+    process.env.REFORGE_STORE_DIR = "undefined";
+    const storeFromEnvUndef = new StateStore();
+    assert.equal(storeFromEnvUndef.baseDir, defaultExpected);
+
+    process.env.REFORGE_STORE_DIR = "";
+    const storeFromEnvEmpty = new StateStore();
+    assert.equal(storeFromEnvEmpty.baseDir, defaultExpected);
+
+    process.env.REFORGE_STORE_DIR = "   ";
+    const storeFromEnvWhitespace = new StateStore();
+    assert.equal(storeFromEnvWhitespace.baseDir, defaultExpected);
+
+    // Valid path should still resolve properly
+    process.env.REFORGE_STORE_DIR = "custom-test-store";
+    const storeFromValidEnv = new StateStore();
+    assert.equal(storeFromValidEnv.baseDir, path.resolve("custom-test-store"));
+  } finally {
+    if (prevEnv === undefined) {
+      delete process.env.REFORGE_STORE_DIR;
+    } else {
+      process.env.REFORGE_STORE_DIR = prevEnv;
+    }
+  }
+});

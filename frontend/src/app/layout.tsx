@@ -38,10 +38,10 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`dark ${geistSans.variable} ${geistMono.variable}`}
+      className={`dark ${geistSans.variable} ${geistMono.variable} overflow-x-hidden`}
       suppressHydrationWarning
     >
-      <body className="min-h-screen bg-bg-canvas text-text-primary antialiased font-sans">
+      <body className="min-h-screen bg-bg-canvas text-text-primary antialiased font-sans overflow-x-hidden">
         <Providers>
           <Shell>{children}</Shell>
         </Providers>

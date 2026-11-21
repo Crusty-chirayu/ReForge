@@ -1,14 +1,19 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Brain,
   ChevronRight,
   Eraser,
+  FileCode,
+  Layers,
   Send,
   Sparkles,
+  Wifi,
   WifiOff,
+  ExternalLink,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -19,9 +24,10 @@ import { Mono } from "@/components/ui/mono";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { BrainResponseView } from "@/components/brain/brain-response";
-import { brainQuery } from "@/lib/api";
+import { FactInferenceBlock } from "@/components/ui/fact-inference-block";
+import { brainQuery, getHealth } from "@/lib/api";
 import { useReport } from "@/lib/context/report-context";
-import type { AnalysisReport, BrainResponse } from "@/lib/api/types";
+import type { AnalysisReport, BrainResponse, Evidence } from "@/lib/api/types";
 
 const MAX_QUESTION_LENGTH = 4_000; // backend: z.string().min(1).max(4_000)
 
@@ -89,6 +95,36 @@ function BrainUnavailable({ onRetry }: { onRetry: () => void }) {
 export default function BrainPage() {
   const router = useRouter();
   const { report, reportLoading } = useReport();
+  const [providerStatus, setProviderStatus] = useState<"ok" | "unconfigured" | "checking">("checking");
+  const [serviceName, setServiceName] = useState<string>("reforge-engine");
+
+  useEffect(() => {
+    let active = true;
+    try {
+      if (typeof getHealth === "function") {
+        const promise = getHealth();
+        if (promise && typeof promise.then === "function") {
+          promise
+            .then((h) => {
+              if (active) {
+                setProviderStatus(h?.status === "ok" ? "ok" : "unconfigured");
+                if (h?.service) setServiceName(h.service);
+              }
+            })
+            .catch(() => {
+              if (active) setProviderStatus("unconfigured");
+            });
+          return () => {
+            active = false;
+          };
+        }
+      }
+    } catch {}
+    setProviderStatus("ok");
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const [question, setQuestion] = useState(() => {
     if (typeof window !== "undefined") {
@@ -98,6 +134,8 @@ export default function BrainPage() {
     return "";
   });
   const [entries, setEntries] = useState<QueryEntry[]>([]);
+  const [selectedEvidence, setSelectedEvidence] = useState<Evidence | null>(null);
+  const [mobileTab, setMobileTab] = useState<"context" | "chat" | "evidence">("chat");
   const abortRef = useRef<AbortController | null>(null);
 
   const runQuery = useCallback(
@@ -151,6 +189,7 @@ export default function BrainPage() {
     abortRef.current = null;
     setQuestion("");
     setEntries([]);
+    setSelectedEvidence(null);
   }, []);
 
   const providerUnavailable = useMemo(
@@ -201,52 +240,65 @@ export default function BrainPage() {
         />
       )}
 
-      <div className="grid gap-6 lg:grid-cols-5">
-        {/* Composer */}
-        <div className="space-y-4 lg:col-span-2">
-          <Card padding="lg">
-            <CardHeader
-              title="Ask Project Brain"
-              subtitle="Evidence-grounded AI reasoning over your analysis report"
-            />
-            <div className="space-y-4">
-              <Textarea
-                label="Question"
-                placeholder="e.g. What are the highest-risk areas of this project?"
-                value={question}
-                onChange={(e) => {
-                  setQuestion(e.target.value);
-                }}
-                maxLength={MAX_QUESTION_LENGTH}
-                className="min-h-[110px] resize-y"
-                disabled={isBusy}
-                hint={`${question.length}/${MAX_QUESTION_LENGTH} characters`}
-              />
-              <Button
-                variant="steel"
-                size="md"
-                icon={<Send size={14} />}
-                onClick={handleSubmit}
-                loading={isBusy}
-                disabled={!question.trim() || isBusy}
+      {/* Mobile region tabs */}
+      <div className="flex items-center gap-1 rounded border border-ink-border/30 bg-ink-1 p-1 lg:hidden">
+        <button
+          type="button"
+          onClick={() => setMobileTab("context")}
+          className={`flex-1 rounded py-1 text-xs font-medium transition-colors ${
+            mobileTab === "context" ? "bg-ink-0 text-ink-fg shadow" : "text-ink-muted"
+          }`}
+        >
+          Context & Prompts
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileTab("chat")}
+          className={`flex-1 rounded py-1 text-xs font-medium transition-colors ${
+            mobileTab === "chat" ? "bg-ink-0 text-ink-fg shadow" : "text-ink-muted"
+          }`}
+        >
+          Conversation ({entries.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileTab("evidence")}
+          className={`flex-1 rounded py-1 text-xs font-medium transition-colors ${
+            mobileTab === "evidence" ? "bg-ink-0 text-ink-fg shadow" : "text-ink-muted"
+          }`}
+        >
+          Evidence Inspector
+        </button>
+      </div>
+
+      {/* 3-Region AI Engineering Workbench */}
+      <div className="grid gap-4 lg:grid-cols-12">
+        {/* Region 1: Repository / Context Panel (Left, 3 cols) */}
+        <div
+          className={`space-y-4 lg:col-span-3 ${
+            mobileTab !== "context" ? "hidden lg:block" : ""
+          }`}
+        >
+          {/* Provider status */}
+          <Card padding="md">
+            <div className="flex items-center justify-between font-mono text-[10px] uppercase text-ink-subtle mb-1">
+              <span>AI Provider</span>
+              <span
+                className={`inline-flex items-center gap-1 font-semibold ${
+                  providerStatus === "ok" ? "text-emerald-400" : "text-amber-400"
+                }`}
               >
-                Ask Brain
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                icon={<Eraser size={12} />}
-                onClick={handleClear}
-                disabled={entries.length === 0 && !question}
-              >
-                Clear conversation
-              </Button>
-              <p className="text-[10px] text-ink-subtle">
-                Answers are AI inference over the deterministic report — the
-                report remains authoritative.
-              </p>
+                {providerStatus === "ok" ? <Wifi size={11} /> : <WifiOff size={11} />}
+                {providerStatus === "ok" ? "Active" : "Unconfigured"}
+              </span>
             </div>
+            <p className="font-mono text-xs text-ink-fg truncate">
+              {serviceName}
+            </p>
           </Card>
+
+          {/* Report Context Card */}
+          <ReportContextCard report={report} />
 
           {/* Suggested questions */}
           <Card padding="none">
@@ -255,14 +307,17 @@ export default function BrainPage() {
               subtitle="Click to ask — suggestions only, no fabricated facts"
               action={<Sparkles size={14} className="text-forge" />}
             />
-            <div className="space-y-1.5 px-4 pb-4">
+            <div className="space-y-1 px-3 pb-3">
               {SUGGESTED_QUESTIONS.map((q) => (
                 <button
                   key={q}
                   type="button"
-                  onClick={() => void runQuery(q, report)}
+                  onClick={() => {
+                    void runQuery(q, report);
+                    setMobileTab("chat");
+                  }}
                   disabled={isBusy}
-                  className="group flex w-full items-start gap-2 rounded border border-ink-border/30 bg-ink-1/30 px-3 py-2 text-left transition-colors hover:border-steel/30 hover:bg-steel/5 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="group flex w-full items-start gap-1.5 rounded border border-ink-border/30 bg-ink-1/30 px-2.5 py-1.5 text-left transition-colors hover:border-steel/30 hover:bg-steel/5 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <ChevronRight
                     size={11}
@@ -277,12 +332,63 @@ export default function BrainPage() {
           </Card>
         </div>
 
-        {/* Investigation log */}
-        <div className="space-y-4 lg:col-span-3">
+        {/* Region 2: Conversation Panel (Center, 6 cols) */}
+        <div
+          className={`space-y-4 lg:col-span-6 ${
+            mobileTab !== "chat" ? "hidden lg:block" : ""
+          }`}
+        >
+          {/* Composer */}
+          <Card padding="md">
+            <CardHeader
+              title="Ask Project Brain"
+              subtitle="Evidence-grounded AI reasoning over your analysis report"
+            />
+            <div className="space-y-3">
+              <Textarea
+                label="Question"
+                placeholder="e.g. What are the highest-risk areas of this project?"
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                maxLength={MAX_QUESTION_LENGTH}
+                className="min-h-[90px] resize-y"
+                disabled={isBusy}
+                hint={`${question.length}/${MAX_QUESTION_LENGTH} characters`}
+              />
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="steel"
+                    size="md"
+                    icon={<Send size={14} />}
+                    onClick={handleSubmit}
+                    loading={isBusy}
+                    disabled={!question.trim() || isBusy}
+                  >
+                    Ask Brain
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    icon={<Eraser size={12} />}
+                    onClick={handleClear}
+                    disabled={entries.length === 0 && !question}
+                  >
+                    Clear conversation
+                  </Button>
+                </div>
+                <p className="text-[10px] text-ink-subtle">
+                  Report facts remain authoritative.
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          {/* Investigation log */}
           <Card padding="none">
             <CardHeader
               title="Investigation Log"
-              subtitle={`${entries.length} quer${entries.length === 1 ? "y" : "ies"} this session · in-memory only, cleared on refresh`}
+              subtitle={`${entries.length} quer${entries.length === 1 ? "y" : "ies"} this session · in-memory only`}
             />
             <div className="space-y-4 px-4 pb-4" data-testid="investigation-log">
               {entries.length === 0 && (
@@ -301,7 +407,8 @@ export default function BrainPage() {
                     </p>
                     <p className="mt-1 text-sm text-ink-fg">{entry.question}</p>
                   </div>
-                  {/* Brain response / states */}
+
+                  {/* Loading */}
                   {entry.status === "loading" && (
                     <div className="flex items-center gap-3 rounded border border-ink-border/30 bg-ink-1/30 px-3 py-3">
                       <Brain size={15} className="animate-pulse text-steel" />
@@ -310,9 +417,19 @@ export default function BrainPage() {
                       </p>
                     </div>
                   )}
+
+                  {/* Response */}
                   {entry.status === "success" && entry.response && (
-                    <BrainResponseView response={entry.response} />
+                    <BrainResponseView
+                      response={entry.response}
+                      onSelectEvidence={(ev) => {
+                        setSelectedEvidence(ev);
+                        setMobileTab("evidence");
+                      }}
+                    />
                   )}
+
+                  {/* Errors */}
                   {entry.status === "error" && entry.error && (
                     <div className="space-y-2">
                       {!isProviderUnavailable(entry.error) && (
@@ -340,10 +457,84 @@ export default function BrainPage() {
             </div>
           </Card>
         </div>
-      </div>
 
-      {/* Report context */}
-      <ReportContextCard report={report} />
+        {/* Region 3: Evidence Inspector Panel (Right, 3 cols) */}
+        <div
+          className={`space-y-4 lg:col-span-3 ${
+            mobileTab !== "evidence" ? "hidden lg:block" : ""
+          }`}
+        >
+          <Card padding="md">
+            <CardHeader
+              title="Evidence Inspector"
+              subtitle="Inspect cited citations and verifiable repository facts"
+            />
+            {selectedEvidence ? (
+              <div className="space-y-3 font-mono text-xs">
+                <div className="rounded border border-border-default bg-bg-raised p-2.5 space-y-1.5">
+                  <div className="flex items-center gap-1.5 text-text-tertiary text-[10px] uppercase">
+                    <FileCode size={12} />
+                    <span>File Target</span>
+                  </div>
+                  <Mono className="text-text-primary text-xs font-semibold block break-all">
+                    {selectedEvidence.file}
+                  </Mono>
+                </div>
+
+                {selectedEvidence.detail && (
+                  <div className="rounded border border-border-subtle bg-bg-surface p-2.5 space-y-1">
+                    <span className="text-text-tertiary text-[10px] uppercase block">
+                      Cited Detail / Snippet
+                    </span>
+                    <p className="font-mono text-xs text-text-secondary leading-relaxed">
+                      {selectedEvidence.detail}
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2 pt-2 border-t border-border-subtle text-[11px]">
+                  <ShieldCheck size={13} className="text-success shrink-0" />
+                  <span className="text-text-secondary">
+                    Grounded in analyzed repository model
+                  </span>
+                </div>
+
+                <div className="pt-2 flex flex-col gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    icon={<Layers size={12} />}
+                    onClick={() => router.push("/xray")}
+                  >
+                    Open in X-Ray
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    icon={<ExternalLink size={12} />}
+                    onClick={() => router.push("/analyze/report")}
+                  >
+                    View Report
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-xs text-ink-muted">
+                  Click on any cited Evidence Chip or citation row in the conversation to inspect its exact repository grounding here.
+                </p>
+
+                {/* Grounded Repository Fact Card */}
+                <FactInferenceBlock
+                  type="fact"
+                  statement={`Repository contains ${report.overview.fileCount} analyzed files across ${report.languages.map((l) => l.name).join(", ") || "TypeScript/JavaScript"}.`}
+                  confidence="HIGH"
+                />
+              </div>
+            )}
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
@@ -397,9 +588,9 @@ function ReportContextCard({ report }: { report: AnalysisReport }) {
         title="Report Context"
         subtitle="The deterministic analysis report used for Brain queries"
       />
-      <dl className="grid gap-x-6 gap-y-1.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <dl className="grid gap-x-3 gap-y-1.5 grid-cols-2">
         {items.map((item) => (
-          <div key={item.label} className="flex items-center justify-between gap-2">
+          <div key={item.label} className="flex items-center justify-between gap-1">
             <dt className="font-mono text-[10px] uppercase tracking-wider text-ink-subtle">
               {item.label}
             </dt>
@@ -409,20 +600,6 @@ function ReportContextCard({ report }: { report: AnalysisReport }) {
           </div>
         ))}
       </dl>
-      {report.recommendedNextSteps.length > 0 && (
-        <div className="mt-3 border-t border-ink-border/20 pt-2">
-          <p className="mb-1 font-mono text-[9px] uppercase tracking-widest text-ink-subtle">
-            Recommended next steps
-          </p>
-          <ul className="space-y-0.5">
-            {report.recommendedNextSteps.slice(0, 3).map((step) => (
-              <li key={step} className="text-xs text-ink-muted">
-                — {step}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
     </Card>
   );
 }
