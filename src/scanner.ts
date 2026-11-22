@@ -2,7 +2,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import type { ScanResult, ScannedFile } from "./domain.js";
 
-const IGNORED_DIRECTORIES = new Set([".git", "node_modules", "dist", "build", "coverage", ".next", ".cache", "vendor", "target", "out", "__pycache__"]);
+const IGNORED_DIRECTORIES = new Set([".git", "node_modules", "dist", "build", "coverage", ".next", ".cache", "vendor", "target", "out", "__pycache__", ".reforge", "test-results", ".turbo"]);
 const TEXT_LIMIT = 512 * 1024;
 const FILE_LIMIT = 10_000;
 const BINARY_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".pdf", ".zip", ".gz", ".tar", ".woff", ".woff2", ".ttf", ".exe", ".dll", ".so", ".dylib"]);

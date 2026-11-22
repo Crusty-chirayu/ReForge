@@ -288,6 +288,10 @@ export async function cloneRepository(repositoryUrl: string, workspace: string):
           windowsHide: true,
           timeout: 120_000,
           maxBuffer: 1024 * 1024,
+          env: {
+            ...process.env,
+            GIT_TERMINAL_PROMPT: "0",
+          },
         },
         (error) => (error ? reject(new Error(`Repository clone failed: ${error.message}`)) : resolve()),
       ),
